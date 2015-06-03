@@ -1,88 +1,8 @@
 "This module is for GAMESS"
 import linecache
+import numpy
 
-def get_esp_from_log2(logfile, espfile):
-
-    #------------Coordinate List for the Atom and ESP Center--------------
-    #Log file uses Angstrom, esp file uses Bohr
-
-    B_TO_A = 0.529177249 #Bohr to Angstrom
-
-    crdl1 = []
-    crdl2 = []
-
-    ln = 1
-    fp = open(logfile, 'r')
-    for line in fp:
-        if 'Electrostatic Properties Using The SCF Density' in line:
-            bln = ln
-        ln = ln + 1
-    fp.close()
-
-    ln = 1
-    fp = open(logfile, 'r')
-    for line in fp:
-        if ln >= bln:
-            if '      Atomic Center' in line:
-                line = line.strip('\n')
-                line = line.split()
-                crd = (float(line[-3])/B_TO_A, float(line[-2])/B_TO_A, float(line[-1])/B_TO_A)
-                crdl1.append(crd)
-            elif ('     ESP Fit Center' in line):
-                line = line.strip('\n')
-                line = line.split()
-                crd = (float(line[-3])/B_TO_A, float(line[-2])/B_TO_A, float(line[-1])/B_TO_A)
-                crdl2.append(crd)
-        ln = ln + 1
-    fp.close()
-
-    #------------ESP values for Atom and ESP Center--------------------
-    #Both log and esp files use Atomic Unit Charge
-
-    espl1 = []
-    espl2 = []
-
-    ln = 1
-    fp = open(logfile, 'r')
-    for line in fp:
-        if 'Electrostatic Properties (Atomic Units)' in line:
-            bln = ln + 6
-        ln = ln + 1
-    fp.close()
-
-    ln = 1
-    fp = open(logfile, 'r')
-    for line in fp:
-        if ln >= bln:
-            if ' Atom' in line:
-                line = line.strip('\n')
-                line = line.split()
-                esp = float(line[-1])
-                espl1.append(esp)
-            elif (' Fit ' in line):
-                line = line.strip('\n')
-                line = line.split()
-                esp = float(line[-1])
-                espl2.append(esp)
-        ln = ln + 1
-    fp.close()
-
-    #----------------Check and print-----------------------
-    if (len(crdl1) == len(espl1)) and (len(crdl2) == len(espl2)):
-        w_espf = open(espfile, 'w')
-        print >> w_espf, "%5d%5d%5d" %(len(crdl1), len(crdl2), 0)
-        for i in range(0, len(crdl1)):
-            crd = crdl1[i]
-            print >> w_espf, "%16s %15.7E %15.7E %15.7E" %(' ', crd[0], crd[1], crd[2])
-        for i in range(0, len(crdl2)):
-            crd = crdl2[i]
-            esp = espl2[i]
-            print >> w_espf, "%16.7E %15.7E %15.7E %15.7E" %(esp, crd[0], crd[1], crd[2])
-        w_espf.close()
-    else:
-        raise ValueError("The length of coordinates and ESP charges are different!")
-
-def get_esp_from_log(logfile, espfile):
+def get_esp_from_gms(logfile, espfile):
 
     B_TO_A = 0.529177249 #Bohr to Angstrom
 
@@ -146,6 +66,44 @@ def get_esp_from_log(logfile, espfile):
         print >> w_espf, "%16.7E %15.7E %15.7E %15.7E" %(val[3], val[0], val[1], val[2])
     w_espf.close()
 
-get_esp_from_log('test2.log', 'test2.esp')
-get_esp_from_log2('1OKL_large_mk.log', '1OKL_large_mk.esp')
+def get_matrix_from_gms(logfile, msize):
+
+    ln = 1
+    fp = open(logfile, 'r')
+    for line in fp:
+        if 'CARTESIAN FORCE CONSTANT MATRIX' in line:
+            bln = ln + 6
+        ln = ln + 1
+    fp.close()
+
+    fcmatrix = numpy.array([[float(0) for x in range(msize)] for x in range(msize)])
+
+    for i in range(0, msize/6): #To see how many cycles need
+        for j in range(0, msize-i*6): #How many lines in the cycle
+            line = linecache.getline(logfile, bln)
+            line = line.strip('\n')
+            for k in range(0, 6): #There are 6 values in one line
+                fcmatrix[j+i*6][k+i*6] = float(line[20+9*k:29+9*k])
+                print j+i*6, k+i*6, fcmatrix[j+i*6][k+i*6]
+            bln = bln + 1
+        bln = bln + 4
+
+    #If there is one more section remaining
+    if (msize%6 == 3):
+        for j in range(0, 3):
+            line = linecache.getline(logfile, bln)
+            line = line.strip('\n')
+            for k in range(0, 3): #There are 6 values in one line
+                fcmatrix[j + msize/6 * 6][k + msize/6 * 6] = float(line[20+9*k:29+9*k])
+            bln = bln + 1
+
+    linecache.clearcache()
+
+    #To complete the matrix
+    for j in range(0, msize):
+        for k in range(0, j+1):
+            fcmatrix[k][j] = fcmatrix[j][k]
+
+    return fcmatrix
+
 

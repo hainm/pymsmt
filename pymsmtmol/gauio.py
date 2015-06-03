@@ -211,3 +211,85 @@ def get_crds_from_log(logfname, g0x):
 
     return crds
 
+def get_esp_from_gau(logfile, espfile):
+
+    #------------Coordinate List for the Atom and ESP Center--------------
+    #Log file uses Angstrom, esp file uses Bohr
+
+    B_TO_A = 0.529177249 #Bohr to Angstrom
+
+    crdl1 = []
+    crdl2 = []
+
+    ln = 1
+    fp = open(logfile, 'r')
+    for line in fp:
+        if 'Electrostatic Properties Using The SCF Density' in line:
+            bln = ln
+        ln = ln + 1
+    fp.close()
+
+    ln = 1
+    fp = open(logfile, 'r')
+    for line in fp:
+        if ln >= bln:
+            if '      Atomic Center' in line:
+                line = line.strip('\n')
+                line = line.split()
+                crd = (float(line[-3])/B_TO_A, float(line[-2])/B_TO_A, float(line[-1])/B_TO_A)
+                crdl1.append(crd)
+            elif ('     ESP Fit Center' in line):
+                line = line.strip('\n')
+                line = line.split()
+                crd = (float(line[-3])/B_TO_A, float(line[-2])/B_TO_A, float(line[-1])/B_TO_A)
+                crdl2.append(crd)
+        ln = ln + 1
+    fp.close()
+
+    #------------ESP values for Atom and ESP Center--------------------
+    #Both log and esp files use Atomic Unit Charge
+
+    espl1 = []
+    espl2 = []
+
+    ln = 1
+    fp = open(logfile, 'r')
+    for line in fp:
+        if 'Electrostatic Properties (Atomic Units)' in line:
+            bln = ln + 6
+        ln = ln + 1
+    fp.close()
+
+    ln = 1
+    fp = open(logfile, 'r')
+    for line in fp:
+        if ln >= bln:
+            if ' Atom' in line:
+                line = line.strip('\n')
+                line = line.split()
+                esp = float(line[-1])
+                espl1.append(esp)
+            elif (' Fit ' in line):
+                line = line.strip('\n')
+                line = line.split()
+                esp = float(line[-1])
+                espl2.append(esp)
+        ln = ln + 1
+    fp.close()
+
+    #----------------Check and print-----------------------
+    if (len(crdl1) == len(espl1)) and (len(crdl2) == len(espl2)):
+        w_espf = open(espfile, 'w')
+        print >> w_espf, "%5d%5d%5d" %(len(crdl1), len(crdl2), 0)
+        for i in range(0, len(crdl1)):
+            crd = crdl1[i]
+            print >> w_espf, "%16s %15.7E %15.7E %15.7E" %(' ', crd[0], crd[1], crd[2])
+        for i in range(0, len(crdl2)):
+            crd = crdl2[i]
+            esp = espl2[i]
+            print >> w_espf, "%16.7E %15.7E %15.7E %15.7E" %(esp, crd[0], crd[1], crd[2])
+        w_espf.close()
+    else:
+        raise ValueError("The length of coordinates and ESP charges are different!")
+
+
