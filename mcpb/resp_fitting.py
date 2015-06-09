@@ -6,6 +6,8 @@ from __future__ import absolute_import
 from pymsmtmol.element import resnamel, Atnum
 from pymsmtmol.readpdb import get_atominfo_fpdb
 from pymsmtmol.getlist import get_mc_blist
+from pymsmtmol.gauio import get_esp_from_gau
+from pymsmtmol.gmsio import get_esp_from_gms
 from pymsmtlib.lib import get_lib_dict
 from pymsmtexp import *
 import os
@@ -433,7 +435,7 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
     fresp2.close()
 
 def resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids,\
-                 ffchoice, mol2fs, metcenres2, chgmod, ionchgr):
+                 ffchoice, mol2fs, metcenres2, chgmod, ionchgr, g0x):
 
     print "******************************************************************"
     print "*                                                                *"
@@ -451,7 +453,13 @@ def resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids,\
     print '***Doing the RESP charge fiting...'
 
     espf = mklogf.strip('.log') + '.esp'
-    os.system("espgen -i %s -o %s" %(mklogf, espf))
+    #os.system("espgen -i %s -o %s" %(mklogf, espf))
+
+    if g0x == 'gau':
+      get_esp_from_gau(mklogf, espf)
+    elif g0x == 'gms':
+      get_esp_from_gms(mklogf, espf)
+
     os.system("resp -O -i resp1.in -o resp1.out -p resp1.pch -t resp1.chg \
                -e %s -s resp1_calc.esp" %espf)
     os.system("resp -O -i resp2.in -o resp2.out -p resp2.pch -q resp1.chg \
@@ -548,6 +556,11 @@ def resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids,\
  
     #Load the force field
     libdict, chargedict = get_lib_dict(ffchoice)
+
+    for mol2f in mol2fs:
+      libdict1, chargedict1 = get_lib_dict(mol2f)
+      libdict.update(libdict1)
+      chargedict.update(chargedict1)
 
     ##get the bondlist
     mol, atids, resids = get_atominfo_fpdb(stpdbf) #from standard pdb

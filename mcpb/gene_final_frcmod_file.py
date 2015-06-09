@@ -17,6 +17,7 @@ from pymsmtmol.readpdb import get_atominfo_fpdb
 from pymsmtmol.getlist import get_alist, get_mc_blist
 from pymsmtmol.gauio import (get_crds_from_fchk, get_matrix_from_fchk,
                              get_fc_from_log)
+from pymsmtmol.gmsio import get_crds_from_gms
 from pymsmtmol.cal import calc_bond, calc_angle
 from pymsmtmol.element import ionnamel
 from pymsmtlib.lib import getfc
@@ -290,7 +291,8 @@ def gene_by_empirical_way(scpdbf, ionids, stfpf, pref, finf):
 
 #-----------------------------------------------------------------------------
 
-def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname, g0x):
+def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
+                           logfile, g0x):
 
     print "==================Using the Seminario method to solve the problem."
 
@@ -307,10 +309,15 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname, g0x):
     elif g0x == 'g09':
       crds = get_crds_from_fchk(chkfname, 'Current cartesian coordinates',
                                 'Force Field')
+    elif g0x == 'gms':
+      crds = get_crds_from_gms(logfile)
 
     #Whole Hessian Matrix
-    fcmatrix = get_matrix_from_fchk(chkfname, 'Cartesian Force Constants',
+    if g0x in ['g03', 'g09']:
+      fcmatrix = get_matrix_from_fchk(chkfname, 'Cartesian Force Constants',
                                     'Dipole Moment', 3*len(atids))
+    elif g0x == 'gms':
+      fcmatrix = get_matrix_from_gms(logfile, 3*len(atids))
 
     natids = {}
     for i in range(0, len(atids)):

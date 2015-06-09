@@ -10,6 +10,7 @@ from pymsmtmol.mol import pdbatm, gauatm
 from pymsmtmol.element import Atnum, CoRadiiDict, \
                               get_ionljparadict, AtnumRev, bdld
 from pymsmtmol.gauio import write_gauatm, write_gauatm_opth
+from pymsmtmol.gmsio import write_gmsatm
 from pymsmtlib.lib import get_lib_dict
 import os
 
@@ -902,9 +903,16 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
 
     #Sidechain model file
     sidechf = outf + '_sidechain.pdb'
-    gfcf = outf + '_sidechain_fc.com'
+
+    #Gaussian
     goptf = outf + '_sidechain_opt.com'
-    ofcf = outf + '_sidechain_fc.in'
+    gfcf = outf + '_sidechain_fc.com'
+
+    #GAMESS
+    goptf2 = outf + '_sidechain_opt.inp'
+    gfcf2 = outf + '_sidechain_fc.inp'
+
+    #SQM
     siopf = outf + '_sidechain_sqm.in'
     soopf = outf + '_sidechain_sqm.out'
 
@@ -946,18 +954,18 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
     fcf.close()
 
     ##ORCA constant calculation file
-    orcafcf = open(ofcf, 'w')
-    print >> orcafcf, "%pal"
-    print >> orcafcf, "  nprocs 2"
-    print >> orcafcf, "end"
-    print >> orcafcf, "%MaxCore 1500"
-    print >> orcafcf, "! B3LYP 6-31G* TightSCF NRSCF"
-    print >> orcafcf, "%method"
-    print >> orcafcf, "  Grid 6"
-    print >> orcafcf, "end"
-    print >> orcafcf, "! Opt"
-    print >> orcafcf, "%%base \"%s\"" %outf
-    orcafcf.close()
+    #orcafcf = open(ofcf, 'w')
+    #print >> orcafcf, "%pal"
+    #print >> orcafcf, "  nprocs 2"
+    #print >> orcafcf, "end"
+    #print >> orcafcf, "%MaxCore 1500"
+    #print >> orcafcf, "! B3LYP 6-31G* TightSCF NRSCF"
+    #print >> orcafcf, "%method"
+    #print >> orcafcf, "  Grid 6"
+    #print >> orcafcf, "end"
+    #print >> orcafcf, "! Opt"
+    #print >> orcafcf, "%%base \"%s\"" %outf
+    #orcafcf.close()
 
     if (sqmopt == 1) or (sqmopt == 3):
       sqm_scf = open(siopf, 'w')
@@ -1016,21 +1024,43 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
       print >> optf, '2'
     optf.close()
 
+    ##GAMESS OPT file
+    optf2 = open(goptf2, 'w')
+    print >> optf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
+    print >> optf2, " $CONTRL DFTTYP=B3LYP RUNTYP=OPTIMIZE ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
+    print >> optf2, " $STATPT METHOD=NR $END"
+    print >> optf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
+    print >> optf2, " $DATA"
+    print >> optf2, "Cluster/6-31G"
+    print >> optf2, "C1"
+    optf2.close()
+
+    ##GAMESS FC file
+    fcf2 = open(gfcf2, 'w')
+    print >> fcf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
+    print >> fcf2, " $CONTRL DFTTYP=B3LYP RUNTYP=HESSIAN ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
+    print >> fcf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
+    print >> fcf2, " $DATA"
+    print >> fcf2, "Cluster/6-31G"
+    print >> fcf2, "C1"
+    fcf2.close()
+
     #ORCA file
-    orcafcf = open(ofcf, 'a')
-    print >> orcafcf, '*xyz', str(int(totchg)),
-    if SpinNum%2 == 0:
-      SpinNum = 1
-      print >> orcafcf, '1'
-    else:
-      SpinNum = 2
-      print >> orcafcf, '2'
-    orcafcf.close()
+    #orcafcf = open(ofcf, 'a')
+    #print >> orcafcf, '*xyz', str(int(totchg)),
+    #if SpinNum%2 == 0:
+    #  SpinNum = 1
+    #  print >> orcafcf, '1'
+    #else:
+    #  SpinNum = 2
+    #  print >> orcafcf, '2'
+    #orcafcf.close()
 
     #Print the coordinates
     for gatmi in gatms:
       write_gauatm(gatmi, goptf)
-      write_gauatm(gatmi, ofcf)
+      write_gauatm(gatmi, gfcf)
+      write_gmsatm(gatmi, goptf2)
 
     ##print the blank line in the guasian input file
     ##Geometry Optimization file
@@ -1045,10 +1075,22 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
     print >> fcf, " "
     fcf.close()
 
+    ##Print the last line in GAMESS input file
+    ##Geometry Optimization file
+    optf2 = open(goptf2, 'a')
+    print >> optf2, " $END"
+    optf2.close()
+
+    ##Force constant calculation file
+    fcf2 = open(gfcf2, 'a')
+    print >> fcf2, " "
+    print >> fcf2, " $END"
+    fcf2.close()
+
     #Force constant calculation file for ORCA
-    orcafcf = open(ofcf, 'a')
-    print >> orcafcf, "*"
-    orcafcf.close()
+    #orcafcf = open(ofcf, 'a')
+    #print >> orcafcf, "*"
+    #orcafcf.close()
 
     #Perform the SQM calcualtion under PM6 first
     if (sqmopt == 1) or (sqmopt == 3):
@@ -1165,6 +1207,7 @@ def build_large_model(mol, lmsresids, lmsresace, lmsresnme, lmsresgly, ionids,
     largef = outf + '_large.pdb'
     lfpf = outf + '_large.fingerprint'
     gmkf = outf + '_large_mk.com'
+    gmsf = outf + '_large_mk.inp'
     simkf = outf + '_large_sqm.in'
     somkf = outf + '_large_sqm.out'
 
@@ -1175,9 +1218,6 @@ def build_large_model(mol, lmsresids, lmsresace, lmsresnme, lmsresgly, ionids,
     #-------------------------------------------------------------------------
     ###############################Large model################################
     #-------------------------------------------------------------------------
-
-    """
-    """
 
     ##MK RESP input file
     mkf = open(gmkf, 'w')
@@ -1192,18 +1232,6 @@ def build_large_model(mol, lmsresids, lmsresace, lmsresnme, lmsresgly, ionids,
     print >> mkf, "CLR"
     print >> mkf, " "
     mkf.close()
-
-    #For GAMESS MK Charge file
-    w_gmsf = open(gmsf, 'w')
-    print >> w_gmsf, " $CONTRL DFTTYP=B3LYP RUNTYP=OPTIMIZE ICHARG=0 MULT=1 COORD=PRINAXIS $END"
-    print >> w_gmsf, " $STATPT METHOD=NR IFREEZ(1)=1,-3 $END"
-    print >> w_gmsf, " $ELPOT IEPOT=1 WHERE=PDC $END"
-    print >> w_gmsf, " $PDC PTSEL=CONNOLLY CONSTR=NONE $END"
-    print >> w_gmsf, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
-    print >> w_gmsf, " $DATA"
-    print >> w_gmsf, "Cluster/6-31G(d)"
-    print >> w_gmsf, "C1"
-    w_gmsf.close()
 
     if (sqmopt == 2) or (sqmopt == 3):
       sqm_lgf = open(simkf, 'w')
@@ -1255,11 +1283,28 @@ def build_large_model(mol, lmsresids, lmsresace, lmsresnme, lmsresgly, ionids,
       print >> mkf, '2'
     mkf.close()
 
-    #Print the coordinates
+    #For GAMESS MK Charge file
+    w_gmsf = open(gmsf, 'w')
+    print >> w_gmsf, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
+    print >> w_gmsf, " $CONTRL DFTTYP=B3LYP ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
+    print >> w_gmsf, " $ELPOT IEPOT=1 WHERE=PDC $END"
+    print >> w_gmsf, " $PDC PTSEL=CONNOLLY CONSTR=NONE $END"
+    print >> w_gmsf, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
+    print >> w_gmsf, " $DATA"
+    print >> w_gmsf, "Cluster/6-31G(d)"
+    print >> w_gmsf, "C1"
+    w_gmsf.close()
+
+    #For Gaussian file
     for gatmi in gatms:
       write_gauatm_opth(gatmi, gmkf)
 
+    #For GAMESS file
+    for gatmi in gatms:
+      write_gmsatm(gatmi, gmsf)
+
     IonLJParaDict = get_ionljparadict(watermodel)
+
     ##print the ion radius for resp charge fitting in MK RESP input file
     mkf = open(gmkf, 'a')
     print >> mkf, " "
@@ -1274,6 +1319,11 @@ def build_large_model(mol, lmsresids, lmsresace, lmsresnme, lmsresgly, ionids,
     print >> mkf, " "
     print >> mkf, " "
     mkf.close()
+
+    #Print the end character for GAMESS input file
+    w_gmsf = open(gmsf, 'a')
+    print >> w_gmsf, ' $END'
+    w_gmsf.close()
 
     #-------------------------------------------------------------------------
     # Doing SQM Optimization

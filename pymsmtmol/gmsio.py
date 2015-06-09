@@ -1,6 +1,51 @@
 "This module is for GAMESS"
 import linecache
 import numpy
+from chemistry.periodic_table import AtomicNum
+
+def write_gmsatm(gmsatm, fname):
+
+    wf = open(fname, 'a')
+    element = gmsatm.element
+    nuchg = AtomicNum[element]
+    nuchg = round(nuchg, 1)
+
+    print >> wf, "%-6s  %6.1f  %8.3f%8.3f%8.3f" %(gmsatm.element, \
+        nuchg, gmsatm.crdx, gmsatm.crdy, gmsatm.crdz)
+    wf.close()
+
+def get_crds_from_gms(logfile):
+
+    B_TO_A = 0.529177249 #Bohr to Angstrom
+
+    unit = 'angs' #Means using Angstrom unit
+
+    fp = open(logfile, 'r')
+    for line in fp:
+        if ' ATOM      ATOMIC                      COORDINATES (BOHR)' in line:
+            bln = ln + 2
+            unit = 'au'    #means using Bohr unit
+        elif ' ATOM      ATOMIC                      COORDINATES (ANGS.)' in line:
+            bln = ln + 2
+            unit = 'angs'
+        elif '          INTERNUCLEAR DISTANCES' in line:
+            eln = ln - 2
+        ln = ln + 1
+    fp.close()
+
+    for i in range(bln, eln+1):
+        line = linecache.getline(logfile, i)
+        line = line.strip('\n')
+        line = line.split()
+        if unit == 'bohr':
+            crd = (float(line[2])*B_TO_A, float(line[3])*B_TO_A, float(line[4])*B_TO_A)
+        elif unit == 'angs':
+            crd = (float(line[2]), float(line[3]), float(line[4]))
+        crdl.append(crd)
+
+    linecache.clearcache()
+
+    return crdl
 
 def get_esp_from_gms(logfile, espfile):
 

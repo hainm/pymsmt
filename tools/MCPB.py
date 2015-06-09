@@ -386,6 +386,7 @@ finfcdf = gname + '.frcmod'
 ##log file
 fclogf = gname + '_sidechain_fc.log'
 mklogf = gname + '_large_mk.log'
+fclogf2 = gname + '_sidechain_gms_fc.log'
 
 ##checkpoint file
 fcfchkf = gname + '_sidechain_opt.fchk'
@@ -431,7 +432,7 @@ elif (options.step == '2'): #Default
     gene_pre_frcmod_file(ionids, premol2fs, stpdbf, stfpf, prefcdf, ff_choice,
                          gaff, frcmodfs, watermodel)
     gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, prefcdf, finfcdf, fcfchkf,
-                         g0x)
+                         fclogf, g0x)
 elif (options.step == '2e'):
     gene_pre_frcmod_file(ionids, premol2fs, stpdbf, stfpf, prefcdf, ff_choice,
                          gaff, frcmodfs, watermodel)
@@ -440,7 +441,7 @@ elif (options.step == '2s'):
     gene_pre_frcmod_file(ionids, premol2fs, stpdbf, stfpf, prefcdf, ff_choice,
                          gaff, frcmodfs, watermodel)
     gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, prefcdf, finfcdf, fcfchkf,
-                         g0x)
+                         fclogf, g0x)
 elif (options.step == '2z'):
     gene_pre_frcmod_file(ionids, premol2fs, stpdbf, stfpf, prefcdf, ff_choice,
                          gaff, frcmodfs, watermodel)
@@ -458,19 +459,19 @@ elif (options.step == '2z'):
 #    according to force field chosen
 elif (options.step == '3'): #Default
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 1, ionchgfix)
+                 premol2fs, mcresname, 1, ionchgfix, g0x)
 elif (options.step == '3a'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 0, ionchgfix)
+                 premol2fs, mcresname, 0, ionchgfix, g0x)
 elif (options.step == '3b'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 1, ionchgfix)
+                 premol2fs, mcresname, 1, ionchgfix, g0x)
 elif (options.step == '3c'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 2, ionchgfix)
+                 premol2fs, mcresname, 2, ionchgfix, g0x)
 elif (options.step == '3d'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 3, ionchgfix)
+                 premol2fs, mcresname, 3, ionchgfix, g0x)
 #==============================================================================
 # Step 4 Prepare the modeling file for leap
 #==============================================================================
