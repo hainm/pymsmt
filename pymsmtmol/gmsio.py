@@ -3,18 +3,21 @@ import linecache
 import numpy
 from chemistry.periodic_table import AtomicNum
 
-def write_gmsatm(gmsatm, fname):
-
+def write_gmsatm(gmsatm, fname, signum=3):
     wf = open(fname, 'a')
     element = gmsatm.element
     nuchg = AtomicNum[element]
     nuchg = round(nuchg, 1)
-
-    print >> wf, "%-6s  %6.1f  %8.3f%8.3f%8.3f" %(gmsatm.element, \
-        nuchg, gmsatm.crdx, gmsatm.crdy, gmsatm.crdz)
+    if signum == 3:
+        print >> wf, "%-6s  %6.1f  %8.3f %8.3f %8.3f" %(gmsatm.element, \
+                 nuchg, gmsatm.crdx, gmsatm.crdy, gmsatm.crdz)
+    elif signum == 4:
+        print >> wf, "%-6s  %6.1f  %9.4f %9.4f %9.4f" %(gmsatm.element, \
+                 nuchg, gmsatm.crdx, gmsatm.crdy, gmsatm.crdz)
     wf.close()
 
 def get_crds_from_gms(logfile):
+    #Coordinates will use Angstro unit
 
     B_TO_A = 0.529177249 #Bohr to Angstrom
 
@@ -24,7 +27,7 @@ def get_crds_from_gms(logfile):
     for line in fp:
         if ' ATOM      ATOMIC                      COORDINATES (BOHR)' in line:
             bln = ln + 2
-            unit = 'au'    #means using Bohr unit
+            unit = 'bohr'    #means using Bohr unit
         elif ' ATOM      ATOMIC                      COORDINATES (ANGS.)' in line:
             bln = ln + 2
             unit = 'angs'
@@ -50,33 +53,49 @@ def get_crds_from_gms(logfile):
 def get_esp_from_gms(logfile, espfile):
 
     B_TO_A = 0.529177249 #Bohr to Angstrom
+    #ESP file uses Bohr unit
 
     #---------For Coordinates--------
-    #Log file use Angstrom, esp file uses Bohr
 
     crdl = []
+
+    bln1 = 0
 
     ln = 1
     fp = open(logfile, 'r')
     for line in fp:
         if 'COORDINATES OF ALL ATOMS ARE' in line:
-            bln = ln + 3
+            bln1 = ln + 3
+        elif ' ATOM      ATOMIC                      COORDINATES (BOHR)' in line:
+            bln2 = ln + 2
+            unit = 'bohr'
+        elif ' ATOM      ATOMIC                      COORDINATES (ANGS.)' in line:
+            bln2 = ln + 2
+            unit = 'angs'
         elif 'INTERNUCLEAR DISTANCES' in line:
             eln = ln - 2
         ln = ln + 1
     fp.close()
 
+    if bln1 == 0:
+        bln = bln2
+    else:
+        bln = bln1
+
     for i in range(bln, eln+1):
         line = linecache.getline(logfile, i)
         line = line.strip('\n')
         line = line.split()
-        crd = (float(line[2])/B_TO_A, float(line[3])/B_TO_A, float(line[4])/B_TO_A)
+        if unit == 'angs':
+            crd = (float(line[2])/B_TO_A, float(line[3])/B_TO_A, float(line[4])/B_TO_A)
+        elif unit == 'bohr':
+            crd = (float(line[2]), float(line[3]), float(line[4]))
         crdl.append(crd)
 
     linecache.clearcache()
 
     #---------For ESP points---------
-    #Both log and esp files use Bohr and Atomic Unit Charge
+    #ESP files use Bohr and Atomic Unit Charge
 
     espdict = {}
 
@@ -88,11 +107,20 @@ def get_esp_from_gms(logfile, espfile):
         ln = ln + 1
     fp.close()
 
-    line = linecache.getline(logfile, bln)
-    line = line.strip('\n')
-    line = line.split()
-    numps = int(line[-1])
-   
+    try:
+        line = linecache.getline(logfile, bln)
+        line = line.strip('\n')
+        line = line.split()
+        numps = int(line[-1])
+    except:
+        line = linecache.getline(logfile, bln)
+        print "CAUTION: " + line.strip('\n') + " IN THE GAMESS CALCULATION."
+        bln = bln + 1
+        line = linecache.getline(logfile, bln)
+        line = line.strip('\n')
+        line = line.split()
+        numps = int(line[-1])
+
     for i in range(bln+1, bln+1+numps):
         line = linecache.getline(logfile, i)
         line = line.strip('\n')

@@ -209,9 +209,10 @@ for line in inputf:
     elif line[0].lower() == 'gau_version':
         if len(line) == 2:
             g0x = line[1].lower()
-            if g0x not in ['g03', 'g09']:
-                raise pymsmtError('Please use either g03 or g09, other '
-                                  'versions are not gurantee to support.')
+            if g0x not in ['g03', 'g09', 'gms']:
+                raise pymsmtError('Please use either g03, g09 or GAMESS, '
+                                  'other versions are not gurantee to '
+                                  'support.')
         elif len(line) == 1:
             warnings.warn('No g0x parameter provided. Default value '
                           '%s is used.' %g0x, pymsmtWarning)

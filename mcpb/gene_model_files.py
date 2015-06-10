@@ -11,6 +11,7 @@ from pymsmtmol.element import Atnum, CoRadiiDict, \
                               get_ionljparadict, AtnumRev, bdld
 from pymsmtmol.gauio import write_gauatm, write_gauatm_opth
 from pymsmtmol.gmsio import write_gmsatm
+from pymsmtmol.sqmio import get_crdinfo_from_sqm
 from pymsmtlib.lib import get_lib_dict
 import os
 
@@ -1028,7 +1029,6 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
     optf2 = open(goptf2, 'w')
     print >> optf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
     print >> optf2, " $CONTRL DFTTYP=B3LYP RUNTYP=OPTIMIZE ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
-    print >> optf2, " $STATPT METHOD=NR $END"
     print >> optf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
     print >> optf2, " $DATA"
     print >> optf2, "Cluster/6-31G"
@@ -1059,7 +1059,6 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
     #Print the coordinates
     for gatmi in gatms:
       write_gauatm(gatmi, goptf)
-      write_gauatm(gatmi, gfcf)
       write_gmsatm(gatmi, goptf2)
 
     ##print the blank line in the guasian input file
@@ -1096,15 +1095,52 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
     if (sqmopt == 1) or (sqmopt == 3):
       if SpinNum == 1:
         print "Performing SQM optimization of sidechain model, please wait..."
-        #Run SQM and antechamber to optimize and transfer the coordinates
+
+        #Run SQM to optimize the coordinates
         os.system("sqm -i %s -o %s" %(siopf, soopf))
-        os.system("antechamber -fi sqmout -fo gcrt -i %s -o %s -pf y"
-                  %(soopf, 'GaussianTemp1.com'))
-        os.system("awk 'NR<=9' %s > %s" %(goptf, 'GaussianTemp2.com'))
-        os.system("awk 'NR>=7' %s >> %s"
-                  %('GaussianTemp1.com', 'GaussianTemp2.com'))
-        os.system("rm GaussianTemp1.com")
-        os.system("mv GaussianTemp2.com %s" %goptf)
+
+        gatms2 = get_crdinfo_from_sqm(soopf)
+
+        ##Gaussian OPT file
+        optf = open(goptf, 'w')
+        print >> optf, "$RunGauss"
+        print >> optf, "%%Chk=%s_sidechain_opt.chk" %outf
+        print >> optf, "%Mem=3000MB"
+        print >> optf, "%NProcShared=2"
+        print >> optf, "#N B3LYP/6-31G* Geom=PrintInputOrient " + \
+                       "Integral=(Grid=UltraFine) Opt"
+        print >> optf, "SCF=XQC"
+        print >> optf, " "
+        print >> optf, "CLR"
+        print >> optf, " "
+        print >> optf, "%d  %d" %(totchg, SpinNum)
+        optf.close()
+
+        for gatmi in gatms2:
+          write_gauatm(gatmi, goptf, 4)
+
+        optf = open(goptf, 'a')
+        print >> optf, " "
+        print >> optf, " "
+        optf.close()
+
+        ##GAMESS OPT file
+        optf2 = open(goptf2, 'w')
+        print >> optf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
+        print >> optf2, " $CONTRL DFTTYP=B3LYP RUNTYP=OPTIMIZE ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
+        print >> optf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
+        print >> optf2, " $DATA"
+        print >> optf2, "Cluster/6-31G"
+        print >> optf2, "C1"
+        optf2.close()
+
+        for gatmi in gatms2:
+          write_gmsatm(gatmi, goptf2, 4)
+
+        optf2 = open(goptf2, 'a')
+        print >> optf2, " $END"
+        optf2.close()
+
       else:
         print "Could not perform SQM optimization for the sidechain model " + \
               "with spin number not equal to 1."
@@ -1331,22 +1367,35 @@ def build_large_model(mol, lmsresids, lmsresace, lmsresnme, lmsresgly, ionids,
 
     if (sqmopt == 2) or (sqmopt == 3):
       if SpinNum == 1:
+
         simkf = outf + '_large_sqm.in'
         somkf = outf + '_large_sqm.out'
         gmkf = outf + '_large_mk.com'
+
         print "Performing SQM optimization of large model, please wait..."
+
+        #Run SQM to optimize the coordinates
         os.system("sqm -i %s -o %s" %(simkf, somkf))
-        os.system("antechamber -fi sqmout -fo gcrt -i %s -o %s -pf y"
-                  %(somkf, 'GaussianTemp1.com'))
-        os.system("awk 'NR<=9' %s > %s" %(gmkf, 'GaussianTemp2.com'))
-        os.system("awk 'NR>=7' %s >> %s"
-                  %('GaussianTemp1.com', 'GaussianTemp2.com'))
-        ln = os.popen("awk 'END {print NR}' %s" %'GaussianTemp2.com').read()
-        ln = int(ln) - 2
-        os.system("head -n %d %s > %s"
-                  %(ln,'GaussianTemp2.com', 'GaussianTemp3.com'))
-        os.system("rm GaussianTemp1.com GaussianTemp2.com")
-        os.system("mv GaussianTemp3.com %s" %gmkf)
+        gatms2 = get_crdinfo_from_sqm(soopf)
+
+        ##MK RESP input file
+        mkf = open(gmkf, 'w')
+        print >> mkf, "$RunGauss"
+        print >> mkf, "%%Chk=%s_large_mk.chk" %outf
+        print >> mkf, "%Mem=3000MB"
+        print >> mkf, "%NProcShared=2"
+        print >> mkf, "#N B3LYP/6-31G* Integral=(Grid=UltraFine) " + \
+                      "Pop(MK,ReadRadii) SCF=XQC"
+        print >> mkf, "IOp(6/33=2)"
+        print >> mkf, " "
+        print >> mkf, "CLR"
+        print >> mkf, " "
+        print >> mkf, "%d  %d" %(totchg, SpinNum)
+        mkf.close()
+
+        for gatmi in gatms2:
+          write_gauatm(gatmi, goptf, 4)
+
         ##print the ion radius for resp charge fitting in MK RESP input file
         mkf = open(gmkf, 'a')
         print >> mkf, " "
@@ -1361,6 +1410,25 @@ def build_large_model(mol, lmsresids, lmsresace, lmsresnme, lmsresgly, ionids,
         print >> mkf, " "
         print >> mkf, " "
         mkf.close()
+
+        #For GAMESS MK Charge file
+        w_gmsf = open(gmsf, 'w')
+        print >> w_gmsf, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
+        print >> w_gmsf, " $CONTRL DFTTYP=B3LYP ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
+        print >> w_gmsf, " $ELPOT IEPOT=1 WHERE=PDC $END"
+        print >> w_gmsf, " $PDC PTSEL=CONNOLLY CONSTR=NONE $END"
+        print >> w_gmsf, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
+        print >> w_gmsf, " $DATA"
+        print >> w_gmsf, "Cluster/6-31G(d)"
+        print >> w_gmsf, "C1"
+        w_gmsf.close()
+
+        for gatmi in gatms2:
+          write_gmsatm(gatmi, gmsf, 4)
+
+        w_gmsf = open(gmsf, 'a')
+        print >> w_gmsf, " $END"
+        w_gmsf.close()
       else:
         print "Could not perform SQM optimization for the large model " + \
               "with spin number not equal to 1."

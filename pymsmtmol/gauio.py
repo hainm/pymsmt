@@ -4,10 +4,15 @@ constants from Gaussian output file.
 """
 import numpy
 
-def write_gauatm(gauatm, fname):
+def write_gauatm(gauatm, fname, signum=3):
+
     wf = open(fname, 'a')
-    print >> wf, "%-6s   %8.3f%8.3f%8.3f" %(gauatm.element, \
-        gauatm.crdx, gauatm.crdy, gauatm.crdz)
+    if signum == 3:
+      print >> wf, "%-6s   %8.3f %8.3f %8.3f" %(gauatm.element, \
+                   gauatm.crdx, gauatm.crdy, gauatm.crdz)
+    elif signum == 4:
+      print >> wf, "%-6s   %9.4f %9.4f %9.4f" %(gauatm.element, \
+                   gauatm.crdx, gauatm.crdy, gauatm.crdz)
     wf.close()
 
 def write_gauatm_opth(gauatm, fname):
