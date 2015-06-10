@@ -4,6 +4,7 @@ import numpy
 from chemistry.periodic_table import AtomicNum
 
 def write_gmsatm(gmsatm, fname, signum=3):
+
     wf = open(fname, 'a')
     element = gmsatm.element
     nuchg = AtomicNum[element]
@@ -178,5 +179,63 @@ def get_matrix_from_gms(logfile, msize):
             fcmatrix[k][j] = fcmatrix[j][k]
 
     return fcmatrix
+
+def write_gms_optf(goptf2, totchg, SpinNum, gatms, signum=3):
+
+    ##GAMESS OPT file
+    optf2 = open(goptf2, 'w')
+    print >> optf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
+    print >> optf2, " $CONTRL DFTTYP=B3LYP RUNTYP=OPTIMIZE ICHARG=%d MULT=%d $END" %(int(totchg), SpinNum)
+    print >> optf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
+    print >> optf2, " $DATA"
+    print >> optf2, "Cluster/6-31G"
+    print >> optf2, "C1"
+    optf2.close()
+
+    for gatmi in gatms:
+      write_gmsatm(gatmi, goptf2, signum)
+
+    ##Print the last line in GAMESS input file
+    ##Geometry Optimization file
+    optf2 = open(goptf2, 'a')
+    print >> optf2, " $END"
+    optf2.close()
+
+def write_gms_fcf(gfcf2, totchg, SpinNum):
+
+    ##GAMESS FC file
+    fcf2 = open(gfcf2, 'w')
+    print >> fcf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
+    print >> fcf2, " $CONTRL DFTTYP=B3LYP RUNTYP=HESSIAN ICHARG=%d MULT=%d $END" %(int(totchg), SpinNum)
+    print >> fcf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
+    print >> fcf2, " $DATA"
+    print >> fcf2, "Cluster/6-31G"
+    print >> fcf2, "C1"
+    print >> fcf2, " "
+    print >> fcf2, " $END"
+    fcf2.close()
+
+def write_gms_mkf(gmsf, totchg, SpinNum, gatms, signum=3):
+
+    #For GAMESS MK Charge file
+    w_gmsf = open(gmsf, 'w')
+    print >> w_gmsf, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
+    print >> w_gmsf, " $CONTRL DFTTYP=B3LYP ICHARG=%d MULT=%d $END" %(int(totchg), SpinNum)
+    print >> w_gmsf, " $ELPOT IEPOT=1 WHERE=PDC $END"
+    print >> w_gmsf, " $PDC PTSEL=CONNOLLY CONSTR=NONE $END"
+    print >> w_gmsf, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
+    print >> w_gmsf, " $DATA"
+    print >> w_gmsf, "Cluster/6-31G(d)"
+    print >> w_gmsf, "C1"
+    w_gmsf.close()
+
+    #For GAMESS file
+    for gatmi in gatms:
+      write_gmsatm(gatmi, gmsf, signum)
+
+    #Print the end character for GAMESS input file
+    w_gmsf = open(gmsf, 'a')
+    print >> w_gmsf, ' $END'
+    w_gmsf.close()
 
 

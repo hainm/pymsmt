@@ -15,13 +15,13 @@ def write_gauatm(gauatm, fname, signum=3):
                    gauatm.crdx, gauatm.crdy, gauatm.crdz)
     wf.close()
 
-def write_gauatm_opth(gauatm, fname):
+def write_gauatm_opth(gauatm, fname, signum=3):
     wf = open(fname, 'a')
     if gauatm.element == "H":
-      print >> wf, "%-6s  0 %8.3f%8.3f%8.3f" %(gauatm.element, \
+      print >> wf, "%-6s  0 %8.3f %8.3f %8.3f" %(gauatm.element, \
           gauatm.crdx, gauatm.crdy, gauatm.crdz)
     else:
-      print >> wf, "%-6s -1 %8.3f%8.3f%8.3f" %(gauatm.element, \
+      print >> wf, "%-6s -1 %8.3f %8.3f %8.3f" %(gauatm.element, \
           gauatm.crdx, gauatm.crdy, gauatm.crdz)
     wf.close()
 
@@ -297,4 +297,85 @@ def get_esp_from_gau(logfile, espfile):
     else:
         raise ValueError("The length of coordinates and ESP charges are different!")
 
+def write_gau_optf(outf, goptf, totchg, SpinNum, gatms, signum=3):
+
+    ##Geometry Optimization file
+    optf = open(goptf, 'w')
+    print >> optf, "$RunGauss"
+    print >> optf, "%%Chk=%s_sidechain_opt.chk" %outf
+    print >> optf, "%Mem=3000MB"
+    print >> optf, "%NProcShared=2"
+    print >> optf, "#N B3LYP/6-31G* Geom=PrintInputOrient " + \
+                   "Integral=(Grid=UltraFine) Opt"
+    print >> optf, "SCF=XQC"
+    print >> optf, " "
+    print >> optf, "CLR"
+    print >> optf, " "
+    print >> optf, "%d  %d" %(int(totchg), SpinNum)
+    optf.close()
+
+    if signum == 3:
+      for gatmi in gatms:
+        write_gauatm(gatmi, goptf)
+    elif signum == 4:
+      for gatmi in gatms:
+        write_gauatm(gatmi, goptf, 4)
+
+    ##Geometry Optimization file
+    optf = open(goptf, 'a')
+    print >> optf, " "
+    print >> optf, " "
+    optf.close()
+
+def write_gau_fcf(outf, gfcf):
+
+    ##Force constant calculation file
+    fcf = open(gfcf, 'w')
+    print >> fcf, "$RunGauss"
+    print >> fcf, "%%Chk=%s_sidechain_opt.chk" %outf
+    print >> fcf, "%Mem=3000MB"
+    print >> fcf, "%NProcShared=2"
+    print >> fcf, "#N B3LYP/6-31G* Freq=NoRaman Geom=AllCheckpoint Guess=Read"
+    print >> fcf, "Integral=(Grid=UltraFine) SCF=XQC IOp(7/33=1)"
+    print >> fcf, " "
+    print >> fcf, " "
+    fcf.close()
+
+def write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict, IonLJParaDict, signum=3):
+
+    ##MK RESP input file
+    mkf = open(gmkf, 'w')
+    print >> mkf, "$RunGauss"
+    print >> mkf, "%%Chk=%s_large_mk.chk" %outf
+    print >> mkf, "%Mem=3000MB"
+    print >> mkf, "%NProcShared=2"
+    print >> mkf, "#N B3LYP/6-31G* Integral=(Grid=UltraFine) Opt " + \
+                  "Pop(MK,ReadRadii) SCF=XQC"
+    print >> mkf, "IOp(6/33=2)"
+    print >> mkf, " "
+    print >> mkf, "CLR"
+    print >> mkf, " "
+    print >> mkf, "%d  %d" %(int(totchg),SpinNum)
+    mkf.close()
+
+    #For Gaussian file
+    if signum == 3:
+      for gatmi in gatms:
+        write_gauatm_opth(gatmi, gmkf)
+    elif signum == 4:
+      for gatmi in gatms:
+        write_gauatm(gatmi, gmkf, signum)
+
+    ##print the ion radius for resp charge fitting in MK RESP input file
+    mkf = open(gmkf, 'a')
+    print >> mkf, " "
+    for i in ionnames:
+      chg = str(int(chargedict[i]))
+      if len(i) > 1:
+        i = i[0] + i[1:].lower()
+      vdwradius = IonLJParaDict[i + chg][0]
+      print >> mkf, i, vdwradius
+    print >> mkf, " "
+    print >> mkf, " "
+    mkf.close()
 

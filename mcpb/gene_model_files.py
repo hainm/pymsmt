@@ -7,11 +7,13 @@ from __future__ import absolute_import
 from pymsmtmol.readpdb import get_atominfo_fpdb, writepdbatm
 from pymsmtmol.cal import calc_bond
 from pymsmtmol.mol import pdbatm, gauatm
-from pymsmtmol.element import Atnum, CoRadiiDict, \
-                              get_ionljparadict, AtnumRev, bdld
-from pymsmtmol.gauio import write_gauatm, write_gauatm_opth
-from pymsmtmol.gmsio import write_gmsatm
-from pymsmtmol.sqmio import get_crdinfo_from_sqm
+from pymsmtmol.element import (Atnum, CoRadiiDict,
+                              get_ionljparadict, AtnumRev, bdld)
+from pymsmtmol.gauio import (write_gauatm, write_gauatm_opth, write_gau_optf,
+                             write_gau_fcf, write_gau_mkf)
+from pymsmtmol.gmsio import (write_gmsatm, write_gms_optf, write_gms_fcf,
+                             write_gms_mkf)
+from pymsmtmol.sqmio import get_crdinfo_from_sqm, write_sqm_optf
 from pymsmtlib.lib import get_lib_dict
 import os
 
@@ -134,7 +136,7 @@ def get_ms_ids(mol, atids, ionids, cutoff):
     return bdatmids, bdatnams
 
 #---------------------Write ACE residue into the PDB file---------------------
-def write_ace(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
+def write_ace(mol, i, gatms, pdbf, fpf=None):
 
     """
     ACE group
@@ -216,13 +218,6 @@ def write_ace(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
         atmi = pdbatm(tiker, atid, atname, resname, chainid, resid,
                       crdx, crdy, crdz, occp, tempfac)
         writepdbatm(atmi, pdbf)
-    
-        #SQM file
-        if (sqmopt == 2) or (sqmopt == 3):
-          sqm_wf = open(sqmif, 'a')
-          print >> sqm_wf, "%-2s %5s %10.4f %10.4f %10.4f" \
-                   %(Atnum[element], atname, crdx, crdy, crdz)
-          sqm_wf.close()
 
         #fingerprint file
         if fpf is not None:
@@ -231,7 +226,7 @@ def write_ace(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
           fpff.close()
 
 #---------------------Write CH3CO2- residue into the PDB file---------------------
-def write_act(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
+def write_act(mol, i, gatms, pdbf, fpf=None):
 
     """
     ACT group
@@ -313,14 +308,7 @@ def write_act(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
         atmi = pdbatm(tiker, atid, atname, resname, chainid, resid,
                       crdx, crdy, crdz, occp, tempfac)
         writepdbatm(atmi, pdbf)
-    
-        #SQM file
-        if (sqmopt == 2) or (sqmopt == 3):
-          sqm_wf = open(sqmif, 'a')
-          print >> sqm_wf, "%-2s %5s %10.4f %10.4f %10.4f" \
-                   %(Atnum[element], atname, crdx, crdy, crdz)
-          sqm_wf.close()
-   
+
         #fingerprint file
         if fpf is not None:
           fpff = open(fpf, 'a')
@@ -328,7 +316,7 @@ def write_act(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
           fpff.close()
 
 #---------------------Write NME residue into the PDB file---------------------
-def write_nme(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
+def write_nme(mol, i, gatms, pdbf, fpf=None):
 
     """
     NME group
@@ -417,13 +405,6 @@ def write_nme(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
           atmi = pdbatm(tiker, atid, atname, resname, chainid, resid,
                         crdx, crdy, crdz, occp, tempfac)
           writepdbatm(atmi, pdbf)
-    
-          #SQM file
-          if (sqmopt == 2) or (sqmopt == 3):
-            sqm_wf = open(sqmif, 'a')
-            print >> sqm_wf, "%-2s %5s %10.4f %10.4f %10.4f" \
-                     %(Atnum[element], atname, crdx, crdy, crdz)
-            sqm_wf.close()
 
           #fingerprint file
           if fpf is not None:
@@ -506,13 +487,6 @@ def write_nme(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
                         crdx, crdy, crdz, occp, tempfac)
           writepdbatm(atmi, pdbf)
 
-          #SQM file
-          if (sqmopt == 2) or (sqmopt == 3):
-            sqm_wf = open(sqmif, 'a')
-            print >> sqm_wf, "%-2s %5s %10.4f %10.4f %10.4f" \
-                     %(Atnum[element], atname, crdx, crdy, crdz)
-            sqm_wf.close()
-
           #fingerprint file
           if fpf is not None:
             fpff = open(fpf, 'a')
@@ -520,7 +494,7 @@ def write_nme(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
             fpff.close()
 
 #---------------------Write GLY residue into the PDB file---------------------
-def write_gly(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
+def write_gly(mol, i, gatms, pdbf, fpf=None):
 
     """
     GLY group
@@ -594,13 +568,6 @@ def write_gly(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
                         crdx, crdy, crdz, occp, tempfac)
           writepdbatm(atmi, pdbf)
 
-          #SQM file
-          if (sqmopt == 2) or (sqmopt == 3):
-            sqm_wf = open(sqmif, 'a')
-            print >> sqm_wf, "%-2s %5s %10.4f %10.4f %10.4f" \
-                     %(Atnum[element], atname, crdx, crdy, crdz)
-            sqm_wf.close()
-
           #fingerprint file
           if fpf is not None:
             fpff = open(fpf, 'a')
@@ -672,13 +639,6 @@ def write_gly(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
                         crdx, crdy, crdz, occp, tempfac)
           writepdbatm(atmi, pdbf)
  
-          #SQM file
-          if (sqmopt == 2) or (sqmopt == 3):
-            sqm_wf = open(sqmif, 'a')
-            print >> sqm_lgf, "%-2s %5s %10.4f %10.4f %10.4f" \
-                     %(Atnum[element], atname, crdx, crdy, crdz)
-            sqm_wf.close()
-
           #fingerprint file
           if fpf is not None:
             fpff = open(fpf, 'a')
@@ -686,7 +646,7 @@ def write_gly(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
             fpff.close()
 
 #---------------------Write normal residue into the PDB file---------------------
-def write_normal(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
+def write_normal(mol, i, gatms, pdbf, fpf=None):
 
     print "It contains the residue " + str(i) + '-' + \
           mol.residues[i].resname
@@ -716,13 +676,6 @@ def write_normal(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
       atmi = pdbatm(tiker, atid, atname, resname, chainid, resid,
                     crdx, crdy, crdz, occp, tempfac)
       writepdbatm(atmi, pdbf)
-    
-      #SQM file
-      if (sqmopt == 1) or (sqmopt == 2) or (sqmopt == 3):
-        sqm_wf = open(sqmif, 'a')
-        print >> sqm_wf, "%-2s %5s %10.4f %10.4f %10.4f" \
-                 %(Atnum[element], atname, crdx, crdy, crdz)
-        sqm_wf.close()
 
       #Fingerprint file
       if fpf is not None:
@@ -731,7 +684,7 @@ def write_normal(mol, i, gatms, pdbf, sqmopt, sqmif, fpf=None):
         fpff.close()
 
 #-----------------------Write Sidechain residues-------------------------------
-def write_sc(mol, i, gatms, sidechf, sqmopt, siopf):
+def write_sc(mol, i, gatms, sidechf):
 
     global H_NAMES, SH_NAMES, GH_NAMES
 
@@ -800,18 +753,11 @@ def write_sc(mol, i, gatms, sidechf, sqmopt, siopf):
                       crdx, crdy, crdz, occp, tempfac)
         writepdbatm(atmi, sidechf)
 
-        #SQM file
-        if (sqmopt == 1) or (sqmopt == 3):
-          sqm_scf = open(siopf, 'a')
-          print >> sqm_scf, "%-2s %5s %10.4f %10.4f %10.4f" \
-                   %(Atnum[element], atname, crdx, crdy, crdz)
-          sqm_scf.close()
-
 #-----------------------Write Sidechain residues2-------------------------------
 
 #By keeping the N, H group inside the residue
 
-def write_sc2(mol, i, gatms, sidechf, sqmopt, siopf):
+def write_sc2(mol, i, gatms, sidechf):
 
     global H_NAMES, SH_NAMES, GH_NAMES, SH_NAMES2
 
@@ -879,13 +825,6 @@ def write_sc2(mol, i, gatms, sidechf, sqmopt, siopf):
                       crdx, crdy, crdz, occp, tempfac)
         writepdbatm(atmi, sidechf)
 
-        #SQM file
-        if (sqmopt == 1) or (sqmopt == 3):
-          sqm_scf = open(siopf, 'a')
-          print >> sqm_scf, "%-2s %5s %10.4f %10.4f %10.4f" \
-                   %(Atnum[element], atname, crdx, crdy, crdz)
-          sqm_scf.close()
-
 #------------------------------Sidechain------------------------------------
 def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
                           scresact, scresknh, totchg, outf, sqmopt):
@@ -920,62 +859,9 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
     #Delete the possible existing file
     del_files([sidechf, gfcf, goptf])
 
-    #SQM file
-    if (sqmopt == 1) or (sqmopt == 3):
-      #Delete the possible existing file
-      del_files([siopf, soopf])
-
     #-------------------------------------------------------------------------
     ###############################Sidechain model############################
     #-------------------------------------------------------------------------
-
-    ##Geometry Optimization file
-    optf = open(goptf, 'w')
-    print >> optf, "$RunGauss"
-    print >> optf, "%%Chk=%s_sidechain_opt.chk" %outf
-    print >> optf, "%Mem=3000MB"
-    print >> optf, "%NProcShared=2"
-    print >> optf, "#N B3LYP/6-31G* Geom=PrintInputOrient " + \
-                   "Integral=(Grid=UltraFine) Opt"
-    print >> optf, "SCF=XQC"
-    print >> optf, " "
-    print >> optf, "CLR"
-    print >> optf, " "
-    optf.close()
-
-    ##Force constant calculation file
-    fcf = open(gfcf, 'w')
-    print >> fcf, "$RunGauss"
-    print >> fcf, "%%Chk=%s_sidechain_opt.chk" %outf
-    print >> fcf, "%Mem=3000MB"
-    print >> fcf, "%NProcShared=2"
-    print >> fcf, "#N B3LYP/6-31G* Freq=NoRaman Geom=AllCheckpoint Guess=Read"
-    print >> fcf, "Integral=(Grid=UltraFine) SCF=XQC IOp(7/33=1)"
-    print >> fcf, " "
-    fcf.close()
-
-    ##ORCA constant calculation file
-    #orcafcf = open(ofcf, 'w')
-    #print >> orcafcf, "%pal"
-    #print >> orcafcf, "  nprocs 2"
-    #print >> orcafcf, "end"
-    #print >> orcafcf, "%MaxCore 1500"
-    #print >> orcafcf, "! B3LYP 6-31G* TightSCF NRSCF"
-    #print >> orcafcf, "%method"
-    #print >> orcafcf, "  Grid 6"
-    #print >> orcafcf, "end"
-    #print >> orcafcf, "! Opt"
-    #print >> orcafcf, "%%base \"%s\"" %outf
-    #orcafcf.close()
-
-    if (sqmopt == 1) or (sqmopt == 3):
-      sqm_scf = open(siopf, 'w')
-      print >> sqm_scf, "Run semi-empirical minimization"
-      print >> sqm_scf, " &qmmm"
-      print >> sqm_scf, " qm_theory='PM6', grms_tol=0.0002,"
-      print >> sqm_scf, " tight_p_conv=1, scfconv=1.d-10, qmcharge=%d," %int(totchg)
-      print >> sqm_scf, " /"
-      sqm_scf.close()
 
     print "***Creating the sidechain model..."
 
@@ -984,22 +870,22 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
     for i in scresids:
       #1) For residue switching to ACE
       if i in scresace:
-        write_ace(mol, i, gatms, sidechf, sqmopt, siopf)
+        write_ace(mol, i, gatms, sidechf)
       #2) For residue switching to NME
       elif i in scresnme:
-        write_nme(mol, i, gatms, sidechf, sqmopt, siopf)
+        write_nme(mol, i, gatms, sidechf)
       #3) For residue switching to CH3CO2-
       elif i in scresact:
-        write_act(mol, i, gatms, sidechf, sqmopt, siopf)
+        write_act(mol, i, gatms, sidechf)
       #4) For residue which keep N and H in the model
       elif i in scresknh:
-        write_sc2(mol, i, gatms, sidechf, sqmopt, siopf)
+        write_sc2(mol, i, gatms, sidechf)
       #5) For normal amino acid residues
       elif i in reslist.std:
-        write_sc(mol, i, gatms, sidechf, sqmopt, siopf)
+        write_sc(mol, i, gatms, sidechf)
       #6) For speical residue
       else:
-        write_normal(mol, i, gatms, sidechf, sqmopt, siopf)
+        write_normal(mol, i, gatms, sidechf)
 
     ln = count_lines(sidechf)
     print "Totally there are " + str(ln) + " atoms in the sidechain model."
@@ -1014,133 +900,31 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
     SpinNum = int(round(SpinNum, 0))
     print "Totally there are " + str(SpinNum) + " electrons in the sidechain model."
 
-    #Gaussian file
-    optf = open(goptf, 'a')
-    print >> optf, str(int(totchg)),
     if SpinNum%2 == 0:
       SpinNum = 1
-      print >> optf, '1'
     else:
-      SpinNum = 2
-      print >> optf, '2'
-    optf.close()
+     SpinNum = 2
 
-    ##GAMESS OPT file
-    optf2 = open(goptf2, 'w')
-    print >> optf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
-    print >> optf2, " $CONTRL DFTTYP=B3LYP RUNTYP=OPTIMIZE ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
-    print >> optf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
-    print >> optf2, " $DATA"
-    print >> optf2, "Cluster/6-31G"
-    print >> optf2, "C1"
-    optf2.close()
+    #Gaussian
+    write_gau_optf(outf, goptf, totchg, SpinNum, gatms)
+    write_gau_fcf(outf, gfcf)
 
-    ##GAMESS FC file
-    fcf2 = open(gfcf2, 'w')
-    print >> fcf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
-    print >> fcf2, " $CONTRL DFTTYP=B3LYP RUNTYP=HESSIAN ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
-    print >> fcf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
-    print >> fcf2, " $DATA"
-    print >> fcf2, "Cluster/6-31G"
-    print >> fcf2, "C1"
-    fcf2.close()
-
-    #ORCA file
-    #orcafcf = open(ofcf, 'a')
-    #print >> orcafcf, '*xyz', str(int(totchg)),
-    #if SpinNum%2 == 0:
-    #  SpinNum = 1
-    #  print >> orcafcf, '1'
-    #else:
-    #  SpinNum = 2
-    #  print >> orcafcf, '2'
-    #orcafcf.close()
-
-    #Print the coordinates
-    for gatmi in gatms:
-      write_gauatm(gatmi, goptf)
-      write_gmsatm(gatmi, goptf2)
-
-    ##print the blank line in the guasian input file
-    ##Geometry Optimization file
-    optf = open(goptf, 'a')
-    print >> optf, " "
-    print >> optf, " "
-    optf.close()
-
-    ##Force constant calculation file
-    fcf = open(gfcf, 'a')
-    print >> fcf, " "
-    print >> fcf, " "
-    fcf.close()
-
-    ##Print the last line in GAMESS input file
-    ##Geometry Optimization file
-    optf2 = open(goptf2, 'a')
-    print >> optf2, " $END"
-    optf2.close()
-
-    ##Force constant calculation file
-    fcf2 = open(gfcf2, 'a')
-    print >> fcf2, " "
-    print >> fcf2, " $END"
-    fcf2.close()
-
-    #Force constant calculation file for ORCA
-    #orcafcf = open(ofcf, 'a')
-    #print >> orcafcf, "*"
-    #orcafcf.close()
+    #GAMESS
+    write_gms_optf(goptf2, totchg, SpinNum, gatms)
+    write_gms_fcf(gfcf2, totchg, SpinNum)
 
     #Perform the SQM calcualtion under PM6 first
     if (sqmopt == 1) or (sqmopt == 3):
+      #Delete the possible existing file
+      del_files([siopf, soopf])
+      write_sqm_optf(siopf, totchg, gatms)
       if SpinNum == 1:
         print "Performing SQM optimization of sidechain model, please wait..."
-
         #Run SQM to optimize the coordinates
         os.system("sqm -i %s -o %s" %(siopf, soopf))
-
         gatms2 = get_crdinfo_from_sqm(soopf)
-
-        ##Gaussian OPT file
-        optf = open(goptf, 'w')
-        print >> optf, "$RunGauss"
-        print >> optf, "%%Chk=%s_sidechain_opt.chk" %outf
-        print >> optf, "%Mem=3000MB"
-        print >> optf, "%NProcShared=2"
-        print >> optf, "#N B3LYP/6-31G* Geom=PrintInputOrient " + \
-                       "Integral=(Grid=UltraFine) Opt"
-        print >> optf, "SCF=XQC"
-        print >> optf, " "
-        print >> optf, "CLR"
-        print >> optf, " "
-        print >> optf, "%d  %d" %(totchg, SpinNum)
-        optf.close()
-
-        for gatmi in gatms2:
-          write_gauatm(gatmi, goptf, 4)
-
-        optf = open(goptf, 'a')
-        print >> optf, " "
-        print >> optf, " "
-        optf.close()
-
-        ##GAMESS OPT file
-        optf2 = open(goptf2, 'w')
-        print >> optf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
-        print >> optf2, " $CONTRL DFTTYP=B3LYP RUNTYP=OPTIMIZE ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
-        print >> optf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
-        print >> optf2, " $DATA"
-        print >> optf2, "Cluster/6-31G"
-        print >> optf2, "C1"
-        optf2.close()
-
-        for gatmi in gatms2:
-          write_gmsatm(gatmi, goptf2, 4)
-
-        optf2 = open(goptf2, 'a')
-        print >> optf2, " $END"
-        optf2.close()
-
+        write_gau_optf(outf, goptf, totchg, SpinNum, gatms2, 4)
+        write_gms_optf(goptf2, totchg, SpinNum, gatms2, 4)
       else:
         print "Could not perform SQM optimization for the sidechain model " + \
               "with spin number not equal to 1."
@@ -1246,55 +1030,27 @@ def build_large_model(mol, lmsresids, lmsresace, lmsresnme, lmsresgly, ionids,
     gmsf = outf + '_large_mk.inp'
     simkf = outf + '_large_sqm.in'
     somkf = outf + '_large_sqm.out'
-
     del_files([largef, lfpf, gmkf])
-    if (sqmopt == 2) or (sqmopt == 3):
-      del_files([simkf, somkf])
 
     #-------------------------------------------------------------------------
     ###############################Large model################################
     #-------------------------------------------------------------------------
 
-    ##MK RESP input file
-    mkf = open(gmkf, 'w')
-    print >> mkf, "$RunGauss"
-    print >> mkf, "%%Chk=%s_large_mk.chk" %outf
-    print >> mkf, "%Mem=3000MB"
-    print >> mkf, "%NProcShared=2"
-    print >> mkf, "#N B3LYP/6-31G* Integral=(Grid=UltraFine) Opt " + \
-                  "Pop(MK,ReadRadii) SCF=XQC"
-    print >> mkf, "IOp(6/33=2)"
-    print >> mkf, " "
-    print >> mkf, "CLR"
-    print >> mkf, " "
-    mkf.close()
-
-    if (sqmopt == 2) or (sqmopt == 3):
-      sqm_lgf = open(simkf, 'w')
-      print >> sqm_lgf, "Run semi-empirical minimization"
-      print >> sqm_lgf, " &qmmm"
-      print >> sqm_lgf, " qm_theory='PM6', grms_tol=0.0002,"
-      print >> sqm_lgf, " tight_p_conv=1, scfconv=1.d-10, qmcharge=%d," %int(totchg)
-      print >> sqm_lgf, " /"
-      sqm_lgf.close()
-
     print "***Creating the large model..."
-
     gatms = []
-
     for i in lmsresids:
       #1) for atoms in ACE ---------------------------------------------------
       if i in lmsresace:
-        write_ace(mol, i, gatms, largef, sqmopt, simkf, lfpf)
+        write_ace(mol, i, gatms, largef, lfpf)
       #2) for atoms in NME ---------------------------------------------------
       elif i in lmsresnme:
-        write_nme(mol, i, gatms, largef, sqmopt, simkf, lfpf)
+        write_nme(mol, i, gatms, largef, lfpf)
       #3) for atoms in GLY ---------------------------------------------------
       elif i in lmsresgly:
-        write_gly(mol, i, gatms, largef, sqmopt, simkf, lfpf)
+        write_gly(mol, i, gatms, largef, lfpf)
       #4) for atoms in other residues ----------------------------------------
       else:
-        write_normal(mol, i, gatms, largef, sqmopt, simkf, lfpf)
+        write_normal(mol, i, gatms, largef, lfpf)
 
     ln = count_lines(largef)
     print "Totally there are " + str(ln) + " atoms in the large model."
@@ -1309,126 +1065,32 @@ def build_large_model(mol, lmsresids, lmsresace, lmsresnme, lmsresgly, ionids,
     SpinNum = int(round(SpinNum, 0))
     print "Totally there are " + str(SpinNum) + " electrons in the large model."
 
-    mkf = open(gmkf, 'a')
-    print >> mkf, str(int(totchg)),
     if SpinNum%2 == 0:
       SpinNum = 1
-      print >> mkf, '1'
     else:
       SpinNum = 2
-      print >> mkf, '2'
-    mkf.close()
-
-    #For GAMESS MK Charge file
-    w_gmsf = open(gmsf, 'w')
-    print >> w_gmsf, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
-    print >> w_gmsf, " $CONTRL DFTTYP=B3LYP ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
-    print >> w_gmsf, " $ELPOT IEPOT=1 WHERE=PDC $END"
-    print >> w_gmsf, " $PDC PTSEL=CONNOLLY CONSTR=NONE $END"
-    print >> w_gmsf, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
-    print >> w_gmsf, " $DATA"
-    print >> w_gmsf, "Cluster/6-31G(d)"
-    print >> w_gmsf, "C1"
-    w_gmsf.close()
 
     #For Gaussian file
-    for gatmi in gatms:
-      write_gauatm_opth(gatmi, gmkf)
-
-    #For GAMESS file
-    for gatmi in gatms:
-      write_gmsatm(gatmi, gmsf)
-
     IonLJParaDict = get_ionljparadict(watermodel)
-
-    ##print the ion radius for resp charge fitting in MK RESP input file
-    mkf = open(gmkf, 'a')
-    print >> mkf, " "
     ionnames = [mol.atoms[i].atname for i in ionids]
     ionnames = list(set(ionnames))
-    for i in ionnames:
-      chg = str(int(chargedict[i]))
-      if len(i) > 1:
-        i = i[0] + i[1:].lower()
-      vdwradius = IonLJParaDict[i + chg][0]
-      print >> mkf, i, vdwradius
-    print >> mkf, " "
-    print >> mkf, " "
-    mkf.close()
+    write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict, IonLJParaDict)
 
-    #Print the end character for GAMESS input file
-    w_gmsf = open(gmsf, 'a')
-    print >> w_gmsf, ' $END'
-    w_gmsf.close()
+    #For GAMESS file
+    write_gms_mkf(gmsf, totchg, SpinNum, gatms)
 
     #-------------------------------------------------------------------------
     # Doing SQM Optimization
     #-------------------------------------------------------------------------
-
     if (sqmopt == 2) or (sqmopt == 3):
+      del_files([simkf, somkf])
+      write_sqm_optf(simkf, totchg, gatms)
       if SpinNum == 1:
-
-        simkf = outf + '_large_sqm.in'
-        somkf = outf + '_large_sqm.out'
-        gmkf = outf + '_large_mk.com'
-
         print "Performing SQM optimization of large model, please wait..."
-
-        #Run SQM to optimize the coordinates
         os.system("sqm -i %s -o %s" %(simkf, somkf))
-        gatms2 = get_crdinfo_from_sqm(soopf)
-
-        ##MK RESP input file
-        mkf = open(gmkf, 'w')
-        print >> mkf, "$RunGauss"
-        print >> mkf, "%%Chk=%s_large_mk.chk" %outf
-        print >> mkf, "%Mem=3000MB"
-        print >> mkf, "%NProcShared=2"
-        print >> mkf, "#N B3LYP/6-31G* Integral=(Grid=UltraFine) " + \
-                      "Pop(MK,ReadRadii) SCF=XQC"
-        print >> mkf, "IOp(6/33=2)"
-        print >> mkf, " "
-        print >> mkf, "CLR"
-        print >> mkf, " "
-        print >> mkf, "%d  %d" %(totchg, SpinNum)
-        mkf.close()
-
-        for gatmi in gatms2:
-          write_gauatm(gatmi, goptf, 4)
-
-        ##print the ion radius for resp charge fitting in MK RESP input file
-        mkf = open(gmkf, 'a')
-        print >> mkf, " "
-        ionnames = [mol.atoms[i].atname for i in ionids]
-        ionnames = list(set(ionnames))
-        for i in ionnames:
-          chg = str(int(chargedict[i]))
-          if len(i) > 1:
-            i = i[0] + i[1:].lower()
-          vdwradius = IonLJParaDict[i + chg][0]
-          print >> mkf, i, vdwradius
-        print >> mkf, " "
-        print >> mkf, " "
-        mkf.close()
-
-        #For GAMESS MK Charge file
-        w_gmsf = open(gmsf, 'w')
-        print >> w_gmsf, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
-        print >> w_gmsf, " $CONTRL DFTTYP=B3LYP ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
-        print >> w_gmsf, " $ELPOT IEPOT=1 WHERE=PDC $END"
-        print >> w_gmsf, " $PDC PTSEL=CONNOLLY CONSTR=NONE $END"
-        print >> w_gmsf, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
-        print >> w_gmsf, " $DATA"
-        print >> w_gmsf, "Cluster/6-31G(d)"
-        print >> w_gmsf, "C1"
-        w_gmsf.close()
-
-        for gatmi in gatms2:
-          write_gmsatm(gatmi, gmsf, 4)
-
-        w_gmsf = open(gmsf, 'a')
-        print >> w_gmsf, " $END"
-        w_gmsf.close()
+        gatms2 = get_crdinfo_from_sqm(somkf)
+        write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict, IonLJParaDict, 4)
+        write_gms_mkf(gmsf, totchg, SpinNum, gatms2, 4)
       else:
         print "Could not perform SQM optimization for the large model " + \
               "with spin number not equal to 1."
