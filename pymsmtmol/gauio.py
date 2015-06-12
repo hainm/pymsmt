@@ -369,6 +369,12 @@ def write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict, IonL
     ##print the ion radius for resp charge fitting in MK RESP input file
     mkf = open(gmkf, 'a')
     print >> mkf, " "
+    for i in ionnames:
+      chg = str(int(chargedict[i]))
+      if len(i) > 1:
+        i = i[0] + i[1:].lower()
+      vdwradius = IonLJParaDict[i + chg][0]
+      print >> mkf, i, vdwradius
     print >> mkf, " "
     for i in ionnames:
       chg = str(int(chargedict[i]))

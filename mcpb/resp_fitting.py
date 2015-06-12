@@ -453,12 +453,13 @@ def resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids,\
     print '***Doing the RESP charge fiting...'
 
     espf = mklogf.strip('.log') + '.esp'
-    #os.system("espgen -i %s -o %s" %(mklogf, espf))
-
-    if g0x == 'gau':
-      get_esp_from_gau(mklogf, espf)
-    elif g0x == 'gms':
-      get_esp_from_gms(mklogf, espf)
+    try:
+      os.system("espgen -i %s -o %s" %(mklogf, espf))
+    except:
+      if g0x == 'gau':
+        get_esp_from_gau(mklogf, espf)
+      elif g0x == 'gms':
+        get_esp_from_gms(mklogf, espf)
 
     os.system("resp -O -i resp1.in -o resp1.out -p resp1.pch -t resp1.chg \
                -e %s -s resp1_calc.esp" %espf)
