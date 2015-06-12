@@ -18,12 +18,14 @@ def write_gmsatm(gmsatm, fname, signum=3):
     wf.close()
 
 def get_crds_from_gms(logfile):
-    #Coordinates will use Angstro unit
+
+    #Coordinates will use Bohr unit
 
     B_TO_A = 0.529177249 #Bohr to Angstrom
 
-    unit = 'angs' #Means using Angstrom unit
+    unit = 'bohr' #Means using Angstrom unit
 
+    ln = 1
     fp = open(logfile, 'r')
     for line in fp:
         if ' ATOM      ATOMIC                      COORDINATES (BOHR)' in line:
@@ -37,15 +39,19 @@ def get_crds_from_gms(logfile):
         ln = ln + 1
     fp.close()
 
+    crdl = []
     for i in range(bln, eln+1):
         line = linecache.getline(logfile, i)
         line = line.strip('\n')
         line = line.split()
         if unit == 'bohr':
-            crd = (float(line[2])*B_TO_A, float(line[3])*B_TO_A, float(line[4])*B_TO_A)
+            crdl.append(float(line[2]))
+            crdl.append(float(line[3]))
+            crdl.append(float(line[4]))
         elif unit == 'angs':
-            crd = (float(line[2]), float(line[3]), float(line[4]))
-        crdl.append(crd)
+            crdl.append(float(line[2])/B_TO_A)
+            crdl.append(float(line[3])/B_TO_A)
+            crdl.append(float(line[4])/B_TO_A)
 
     linecache.clearcache()
 
@@ -186,6 +192,7 @@ def write_gms_optf(goptf2, totchg, SpinNum, gatms, signum=3):
     optf2 = open(goptf2, 'w')
     print >> optf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
     print >> optf2, " $CONTRL DFTTYP=B3LYP RUNTYP=OPTIMIZE ICHARG=%d MULT=%d $END" %(int(totchg), SpinNum)
+    print >> optf2, " $STATPT NSTEP=1000 $END"
     print >> optf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
     print >> optf2, " $DATA"
     print >> optf2, "Cluster/6-31G"

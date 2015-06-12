@@ -17,7 +17,7 @@ from pymsmtmol.readpdb import get_atominfo_fpdb
 from pymsmtmol.getlist import get_alist, get_mc_blist
 from pymsmtmol.gauio import (get_crds_from_fchk, get_matrix_from_fchk,
                              get_fc_from_log)
-from pymsmtmol.gmsio import get_crds_from_gms
+from pymsmtmol.gmsio import get_crds_from_gms, get_matrix_from_gms
 from pymsmtmol.cal import calc_bond, calc_angle
 from pymsmtmol.element import ionnamel
 from pymsmtlib.lib import getfc
