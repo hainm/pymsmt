@@ -123,6 +123,8 @@ def write_gauatm_opth(gauatm, fname, signum=3):
 
 def get_crds_from_fchk(fname, bstring, estring):
 
+    #fchk file uses Bohr unit
+
     crds = []
 
     bl = len(bstring)
@@ -201,6 +203,8 @@ def get_matrix_from_fchk(fname, bstring, estring, msize):
     return fcmatrix
 
 def get_crds_from_log(logfname, g0x):
+
+    #Log file uses angs. as unit
 
     if g0x == 'g03':
       fp = open(logfname)
@@ -313,10 +317,9 @@ def get_fc_from_log(logfname):
     return sturefs, vals, fcs
 
 def get_esp_from_gau(logfile, espfile):
+    #Gaussian log file uses Angstrom as unit, esp file uses Bohr
 
     #------------Coordinate List for the Atom and ESP Center--------------
-    #Log file uses Angstrom, esp file uses Bohr
-
     B_TO_A = 0.529177249 #Bohr to Angstrom
 
     crdl1 = []

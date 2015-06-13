@@ -7,6 +7,8 @@ from chemistry.periodic_table import AtomicNum
 #--------------------------Write GAMESS input file-----------------------------
 #------------------------------------------------------------------------------
 
+B_TO_A = 0.529177249
+
 def write_gms_optf(goptf2, totchg, SpinNum, gatms, signum=3):
 
     ##GAMESS OPT file
@@ -86,19 +88,17 @@ def write_gmsatm(gmsatm, fname, signum=3):
 
 def get_crds_from_gms(logfile):
 
-    #Coordinates will use Bohr unit
+    global B_TO_A #Bohr to Angstrom
 
-    B_TO_A = 0.529177249 #Bohr to Angstrom
-
-    unit = 'bohr' #Means using Angstrom unit
+    unit = 'angs' #Coordinates will use angs unit in default
 
     ln = 1
     fp = open(logfile, 'r')
     for line in fp:
         if ' ATOM      ATOMIC                      COORDINATES (BOHR)' in line:
             bln = ln + 2
-            unit = 'bohr'    #means using Bohr unit
-        elif ' ATOM      ATOMIC                      COORDINATES (ANGS.)' in line:
+            unit = 'bohr'    #Means using Bohr unit
+        elif ' ATOM      ATOMIC                      COORDINATES (ANGS' in line:
             bln = ln + 2
             unit = 'angs'
         elif '          INTERNUCLEAR DISTANCES' in line:
@@ -119,7 +119,6 @@ def get_crds_from_gms(logfile):
             crdl.append(float(line[2])/B_TO_A)
             crdl.append(float(line[3])/B_TO_A)
             crdl.append(float(line[4])/B_TO_A)
-
     linecache.clearcache()
 
     return crdl
@@ -165,24 +164,29 @@ def get_matrix_from_gms(logfile, msize):
 
 def get_esp_from_gms(logfile, espfile):
 
-    B_TO_A = 0.529177249 #Bohr to Angstrom
     #ESP file uses Bohr unit
 
-    #---------For Coordinates--------
+    global B_TO_A #Bohr to Angstrom
 
+    unit = 'bohr' #In default ESP coordinates will use bohr unit
+
+    #---------For Coordinates--------
     crdl = []
 
     bln1 = 0
-
     ln = 1
     fp = open(logfile, 'r')
     for line in fp:
-        if 'COORDINATES OF ALL ATOMS ARE' in line:
+        if 'COORDINATES OF ALL ATOMS ARE (ANGS)' in line:
             bln1 = ln + 3
+            unit = 'angs'
+        elif 'COORDINATES OF ALL ATOMS ARE (BOHR)' in line:
+            bln1 = ln + 3
+            unit = 'bohr'
         elif ' ATOM      ATOMIC                      COORDINATES (BOHR)' in line:
             bln2 = ln + 2
             unit = 'bohr'
-        elif ' ATOM      ATOMIC                      COORDINATES (ANGS.)' in line:
+        elif ' ATOM      ATOMIC                      COORDINATES (ANGS' in line:
             bln2 = ln + 2
             unit = 'angs'
         elif 'INTERNUCLEAR DISTANCES' in line:
@@ -251,6 +255,5 @@ def get_esp_from_gms(logfile, espfile):
         val = espdict[i]
         print >> w_espf, "%16.7E %15.7E %15.7E %15.7E" %(val[3], val[0], val[1], val[2])
     w_espf.close()
-
 
 

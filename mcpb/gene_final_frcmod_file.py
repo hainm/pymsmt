@@ -373,6 +373,7 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
         at1 = bond[0]
         at2 = bond[1]
         bondtyp = (attypdict[at1], attypdict[at2])
+        "The unit in fchk file is a.u. so the distance is in Bohr."
         if bondtyp == misbond or bondtyp[::-1] == misbond:
           crd1 = crds[3*natids[at1]-3:3*natids[at1]]
           crd2 = crds[3*natids[at2]-3:3*natids[at2]]
@@ -559,6 +560,7 @@ def gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, pref, finf, logfname):
           at1 = sturefs[i][0]
           at2 = sturefs[i][1]
           bondtyp = (attypdict[at1], attypdict[at2])
+          "The unit in log file is Angs."
           if bondtyp == misbond or bondtyp[::-1] == misbond:
             dis = vals[i]
             fcfinal = fcs[i] * 2240.87 * 0.5
