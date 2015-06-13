@@ -1,5 +1,8 @@
 "This module is for ORCA"
 
+from __future__ import absolute_import
+from pymsmtmol.gauio import write_gauatm
+
 def write_orca_optf(outf, ofcf, totchg, SpinNum, gatms):
 
     ##ORCA constant calculation file

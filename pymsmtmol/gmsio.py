@@ -3,6 +3,69 @@ import linecache
 import numpy
 from chemistry.periodic_table import AtomicNum
 
+#------------------------------------------------------------------------------
+#--------------------------Write GAMESS input file-----------------------------
+#------------------------------------------------------------------------------
+
+def write_gms_optf(goptf2, totchg, SpinNum, gatms, signum=3):
+
+    ##GAMESS OPT file
+    optf2 = open(goptf2, 'w')
+    print >> optf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
+    print >> optf2, " $CONTRL DFTTYP=B3LYP RUNTYP=OPTIMIZE ICHARG=%d MULT=%d $END" %(int(totchg), SpinNum)
+    print >> optf2, " $STATPT NSTEP=1000 $END"
+    print >> optf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
+    print >> optf2, " $DATA"
+    print >> optf2, "Cluster/6-31G"
+    print >> optf2, "C1"
+    optf2.close()
+
+    for gatmi in gatms:
+      write_gmsatm(gatmi, goptf2, signum)
+
+    ##Print the last line in GAMESS input file
+    ##Geometry Optimization file
+    optf2 = open(goptf2, 'a')
+    print >> optf2, " $END"
+    optf2.close()
+
+def write_gms_fcf(gfcf2, totchg, SpinNum):
+
+    ##GAMESS FC file
+    fcf2 = open(gfcf2, 'w')
+    print >> fcf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
+    print >> fcf2, " $CONTRL DFTTYP=B3LYP RUNTYP=HESSIAN ICHARG=%d MULT=%d $END" %(int(totchg), SpinNum)
+    print >> fcf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
+    print >> fcf2, " $DATA"
+    print >> fcf2, "Cluster/6-31G"
+    print >> fcf2, "C1"
+    print >> fcf2, " "
+    print >> fcf2, " $END"
+    fcf2.close()
+
+def write_gms_mkf(gmsf, totchg, SpinNum, gatms, signum=3):
+
+    #For GAMESS MK Charge file
+    w_gmsf = open(gmsf, 'w')
+    print >> w_gmsf, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
+    print >> w_gmsf, " $CONTRL DFTTYP=B3LYP ICHARG=%d MULT=%d $END" %(int(totchg), SpinNum)
+    print >> w_gmsf, " $ELPOT IEPOT=1 WHERE=PDC $END"
+    print >> w_gmsf, " $PDC PTSEL=CONNOLLY CONSTR=NONE $END"
+    print >> w_gmsf, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
+    print >> w_gmsf, " $DATA"
+    print >> w_gmsf, "Cluster/6-31G(d)"
+    print >> w_gmsf, "C1"
+    w_gmsf.close()
+
+    #For GAMESS file
+    for gatmi in gatms:
+      write_gmsatm(gatmi, gmsf, signum)
+
+    #Print the end character for GAMESS input file
+    w_gmsf = open(gmsf, 'a')
+    print >> w_gmsf, ' $END'
+    w_gmsf.close()
+
 def write_gmsatm(gmsatm, fname, signum=3):
 
     wf = open(fname, 'a')
@@ -16,6 +79,10 @@ def write_gmsatm(gmsatm, fname, signum=3):
         print >> wf, "%-6s  %6.1f  %9.4f %9.4f %9.4f" %(gmsatm.element, \
                  nuchg, gmsatm.crdx, gmsatm.crdy, gmsatm.crdz)
     wf.close()
+
+#------------------------------------------------------------------------------
+#----------------------Read info from GAMESS output file-----------------------
+#------------------------------------------------------------------------------
 
 def get_crds_from_gms(logfile):
 
@@ -56,6 +123,45 @@ def get_crds_from_gms(logfile):
     linecache.clearcache()
 
     return crdl
+
+def get_matrix_from_gms(logfile, msize):
+
+    ln = 1
+    fp = open(logfile, 'r')
+    for line in fp:
+        if 'CARTESIAN FORCE CONSTANT MATRIX' in line:
+            bln = ln + 6
+        ln = ln + 1
+    fp.close()
+
+    fcmatrix = numpy.array([[float(0) for x in range(msize)] for x in range(msize)])
+
+    for i in range(0, msize/6): #To see how many cycles need
+        for j in range(0, msize-i*6): #How many lines in the cycle
+            line = linecache.getline(logfile, bln)
+            line = line.strip('\n')
+            for k in range(0, 6): #There are 6 values in one line
+                fcmatrix[j+i*6][k+i*6] = float(line[20+9*k:29+9*k])
+            bln = bln + 1
+        bln = bln + 4
+
+    #If there is one more section remaining
+    if (msize%6 == 3):
+        for j in range(0, 3):
+            line = linecache.getline(logfile, bln)
+            line = line.strip('\n')
+            for k in range(0, 3): #There are 6 values in one line
+                fcmatrix[j + msize/6 * 6][k + msize/6 * 6] = float(line[20+9*k:29+9*k])
+            bln = bln + 1
+
+    linecache.clearcache()
+
+    #To complete the matrix
+    for j in range(0, msize):
+        for k in range(0, j+1):
+            fcmatrix[k][j] = fcmatrix[j][k]
+
+    return fcmatrix
 
 def get_esp_from_gms(logfile, espfile):
 
@@ -146,103 +252,5 @@ def get_esp_from_gms(logfile, espfile):
         print >> w_espf, "%16.7E %15.7E %15.7E %15.7E" %(val[3], val[0], val[1], val[2])
     w_espf.close()
 
-def get_matrix_from_gms(logfile, msize):
-
-    ln = 1
-    fp = open(logfile, 'r')
-    for line in fp:
-        if 'CARTESIAN FORCE CONSTANT MATRIX' in line:
-            bln = ln + 6
-        ln = ln + 1
-    fp.close()
-
-    fcmatrix = numpy.array([[float(0) for x in range(msize)] for x in range(msize)])
-
-    for i in range(0, msize/6): #To see how many cycles need
-        for j in range(0, msize-i*6): #How many lines in the cycle
-            line = linecache.getline(logfile, bln)
-            line = line.strip('\n')
-            for k in range(0, 6): #There are 6 values in one line
-                fcmatrix[j+i*6][k+i*6] = float(line[20+9*k:29+9*k])
-                print j+i*6, k+i*6, fcmatrix[j+i*6][k+i*6]
-            bln = bln + 1
-        bln = bln + 4
-
-    #If there is one more section remaining
-    if (msize%6 == 3):
-        for j in range(0, 3):
-            line = linecache.getline(logfile, bln)
-            line = line.strip('\n')
-            for k in range(0, 3): #There are 6 values in one line
-                fcmatrix[j + msize/6 * 6][k + msize/6 * 6] = float(line[20+9*k:29+9*k])
-            bln = bln + 1
-
-    linecache.clearcache()
-
-    #To complete the matrix
-    for j in range(0, msize):
-        for k in range(0, j+1):
-            fcmatrix[k][j] = fcmatrix[j][k]
-
-    return fcmatrix
-
-def write_gms_optf(goptf2, totchg, SpinNum, gatms, signum=3):
-
-    ##GAMESS OPT file
-    optf2 = open(goptf2, 'w')
-    print >> optf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
-    print >> optf2, " $CONTRL DFTTYP=B3LYP RUNTYP=OPTIMIZE ICHARG=%d MULT=%d $END" %(int(totchg), SpinNum)
-    print >> optf2, " $STATPT NSTEP=1000 $END"
-    print >> optf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
-    print >> optf2, " $DATA"
-    print >> optf2, "Cluster/6-31G"
-    print >> optf2, "C1"
-    optf2.close()
-
-    for gatmi in gatms:
-      write_gmsatm(gatmi, goptf2, signum)
-
-    ##Print the last line in GAMESS input file
-    ##Geometry Optimization file
-    optf2 = open(goptf2, 'a')
-    print >> optf2, " $END"
-    optf2.close()
-
-def write_gms_fcf(gfcf2, totchg, SpinNum):
-
-    ##GAMESS FC file
-    fcf2 = open(gfcf2, 'w')
-    print >> fcf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
-    print >> fcf2, " $CONTRL DFTTYP=B3LYP RUNTYP=HESSIAN ICHARG=%d MULT=%d $END" %(int(totchg), SpinNum)
-    print >> fcf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
-    print >> fcf2, " $DATA"
-    print >> fcf2, "Cluster/6-31G"
-    print >> fcf2, "C1"
-    print >> fcf2, " "
-    print >> fcf2, " $END"
-    fcf2.close()
-
-def write_gms_mkf(gmsf, totchg, SpinNum, gatms, signum=3):
-
-    #For GAMESS MK Charge file
-    w_gmsf = open(gmsf, 'w')
-    print >> w_gmsf, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
-    print >> w_gmsf, " $CONTRL DFTTYP=B3LYP ICHARG=%d MULT=%d $END" %(int(totchg), SpinNum)
-    print >> w_gmsf, " $ELPOT IEPOT=1 WHERE=PDC $END"
-    print >> w_gmsf, " $PDC PTSEL=CONNOLLY CONSTR=NONE $END"
-    print >> w_gmsf, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
-    print >> w_gmsf, " $DATA"
-    print >> w_gmsf, "Cluster/6-31G(d)"
-    print >> w_gmsf, "C1"
-    w_gmsf.close()
-
-    #For GAMESS file
-    for gatmi in gatms:
-      write_gmsatm(gatmi, gmsf, signum)
-
-    #Print the end character for GAMESS input file
-    w_gmsf = open(gmsf, 'a')
-    print >> w_gmsf, ' $END'
-    w_gmsf.close()
 
 
