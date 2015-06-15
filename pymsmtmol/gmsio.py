@@ -2,12 +2,11 @@
 import linecache
 import numpy
 from chemistry.periodic_table import AtomicNum
+from constants import B_TO_A
 
 #------------------------------------------------------------------------------
 #--------------------------Write GAMESS input file-----------------------------
 #------------------------------------------------------------------------------
-
-B_TO_A = 0.529177249
 
 def write_gms_optf(goptf2, totchg, SpinNum, gatms, signum=3):
 
@@ -88,8 +87,6 @@ def write_gmsatm(gmsatm, fname, signum=3):
 
 def get_crds_from_gms(logfile):
 
-    global B_TO_A #Bohr to Angstrom
-
     unit = 'angs' #Coordinates will use angs unit in default
 
     ln = 1
@@ -165,8 +162,6 @@ def get_matrix_from_gms(logfile, msize):
 def get_esp_from_gms(logfile, espfile):
 
     #ESP file uses Bohr unit
-
-    global B_TO_A #Bohr to Angstrom
 
     unit = 'bohr' #In default ESP coordinates will use bohr unit
 

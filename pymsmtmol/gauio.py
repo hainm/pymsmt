@@ -3,6 +3,7 @@ Module for writting a Gaussian file and read the coordinates and force
 constants from Gaussian output file.
 """
 import numpy
+from constants import B_TO_A
 
 #------------------------------------------------------------------------------
 #------------------------Write Gaussian input file-----------------------------
@@ -320,8 +321,6 @@ def get_esp_from_gau(logfile, espfile):
     #Gaussian log file uses Angstrom as unit, esp file uses Bohr
 
     #------------Coordinate List for the Atom and ESP Center--------------
-    B_TO_A = 0.529177249 #Bohr to Angstrom
-
     crdl1 = []
     crdl2 = []
 

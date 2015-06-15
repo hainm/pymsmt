@@ -1,6 +1,7 @@
 from numpy import average, array, dot, cross
 from numpy.linalg import eigvals, eig, norm
 from pymsmtmol.cal import calc_bond, calc_angle
+from pymsmtmol.constants import *
 
 crd1 = [-1.257875, 0.494274, 0.000000]
 #crd2 = [-0.290487, 0.543584, 0.000000]
@@ -31,8 +32,8 @@ fc = 0.0
 for i in range(0, 3):
   ev = eigvector[:,i]
   fc = fc + eigval[i] * abs(dot(ev, vec12))
-fcfinal = fc * 2240.87 * 0.5
-#2240.87 is Hatree/(Bohr^2) to kcal/(mol*angstrom^2)
+fcfinal = fc * HB2_TO_KCAL_MOL_A2 * 0.5
+#Hatree/(Bohr^2) to kcal/(mol*angstrom^2)
 #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
 #bfconst.append(fcfinal)
 print fcfinal

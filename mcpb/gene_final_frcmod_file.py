@@ -20,6 +20,7 @@ from pymsmtmol.gauio import (get_crds_from_fchk, get_matrix_from_fchk,
 from pymsmtmol.gmsio import get_crds_from_gms, get_matrix_from_gms
 from pymsmtmol.cal import calc_bond, calc_angle
 from pymsmtmol.element import ionnamel
+from pymsmtmol.constants import *
 from pymsmtlib.lib import getfc
 from pymsmtexp import *
 from numpy import average, array, dot, cross
@@ -383,7 +384,7 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
           vec12 = [i/(disbohr) for i in vec12]
           vec12 = array(vec12)
 
-          dis = disbohr * 0.529177249 #Transfer bohr to angstrom
+          dis = disbohr * B_TO_A #Transfer bohr to angstrom
           bondlen.append(dis)
 
           #bond force constant matrix, size 3 * 3
@@ -401,8 +402,8 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
             ev = eigvector[:,i]
             fc = fc + eigval[i] * abs(dot(ev, vec12))
 
-          fcfinal = fc * 2240.87 * 0.5
-          #2240.87 is Hatree/(Bohr^2) to kcal/(mol*angstrom^2)
+          fcfinal = fc * HB2_TO_KCAL_MOL_A2 * 0.5
+          #Hatree/(Bohr^2) to kcal/(mol*angstrom^2)
           #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
           bfconst.append(fcfinal)
 
@@ -474,8 +475,8 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
           contri12 = 1.0 / (contri12 * dis12 * dis12)
           contri32 = 1.0 / (contri32 * dis32 * dis32)
 
-          fcfinal = (1.0 / (contri12 + contri32)) * 627.5095 * 0.5
-          #627.5095 is Hatree to kcal/mol
+          fcfinal = (1.0 / (contri12 + contri32)) * H_TO_KCAL_MOL * 0.5
+          #Hatree to kcal/mol
           #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
           afconst.append(fcfinal)
 
@@ -563,8 +564,8 @@ def gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, pref, finf, logfname):
           "The unit in log file is Angs."
           if bondtyp == misbond or bondtyp[::-1] == misbond:
             dis = vals[i]
-            fcfinal = fcs[i] * 2240.87 * 0.5
-            #2240.87 is Hatree/(Bohr^2) to kcal/(mol*angstrom^2)
+            fcfinal = fcs[i] * HB2_TO_KCAL_MOL_A2 * 0.5
+            #Hatree/(Bohr^2) to kcal/(mol*angstrom^2)
             #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
             bondlen.append(dis)
             bfconst.append(fcfinal)
@@ -588,8 +589,8 @@ def gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, pref, finf, logfname):
           angtyp = (attypdict[at1], attypdict[at2], attypdict[at3])
           if angtyp == misang or angtyp[::-1] == misang:
             angval = vals[i]
-            fcfinal = fcs[i] * 627.5095 * 0.5
-            #627.5095 is Hatree to kcal/mol
+            fcfinal = fcs[i] * H_TO_KCAL_MOL * 0.5
+            #Hatree to kcal/mol
             #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
             angvals.append(angval)
             afconst.append(fcfinal)
