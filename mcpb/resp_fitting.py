@@ -152,7 +152,7 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
     #new atids
     natids = [i for i in range(1, len(atids)+1)] 
 
-    iddict = {}
+    iddict = {} #First number is iddict
 
     for i in range(0, len(atids)):
       iddict[atids[i]] = natids[i]
@@ -237,7 +237,7 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
           bondinfo = [at1, at2]
           if set(atinres).intersection(set(bondinfo)) == set(bondinfo):
             blistinres.append(bondinfo)
-
+ 
         #for the bonds inside a residue, to see whether there are two atoms
         #connect to the same atoms
         for j in range(0, len(blistinres)):
@@ -453,13 +453,15 @@ def resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids,\
     print '***Doing the RESP charge fiting...'
 
     espf = mklogf.strip('.log') + '.esp'
-    try:
-      os.system("espgen -i %s -o %s" %(mklogf, espf))
-    except:
-      if g0x == 'gau':
-        get_esp_from_gau(mklogf, espf)
-      elif g0x == 'gms':
-        get_esp_from_gms(mklogf, espf)
+
+    #try:
+    #  os.system("espgen -i %s -o %s" %(mklogf, espf))
+    #except:
+
+    if g0x in ['g03', 'g09']:
+      get_esp_from_gau(mklogf, espf)
+    elif g0x == 'gms':
+      get_esp_from_gms(mklogf, espf)
 
     os.system("resp -O -i resp1.in -o resp1.out -p resp1.pch -t resp1.chg \
                -e %s -s resp1_calc.esp" %espf)
