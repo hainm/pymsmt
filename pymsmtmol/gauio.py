@@ -4,10 +4,42 @@ constants from Gaussian output file.
 """
 import numpy
 from constants import B_TO_A
+from chemistry.periodic_table import AtomicNum
 
 #------------------------------------------------------------------------------
 #------------------------Write Gaussian input file-----------------------------
 #------------------------------------------------------------------------------
+
+def write_sdd_basis(gatms, gauf):
+
+    atnames = [i.element for i in gatms]
+    atnames = list(set(atnames))
+    atnums = [AtomicNum[i] for i in atnames]
+
+    w_gauf = open(gauf, 'a')
+    print >> w_gauf, " "
+    for i in atnames:
+      if AtomicNum[i] <= 18:
+        print >> w_gauf, i,
+    print >> w_gauf, "0"
+    print >> w_gauf, "6-31G*"
+    print >> w_gauf, "****"
+
+    for i in atnames:
+      if Atomic_Num[i] >= 19:
+        print >> w_gauf, i
+    print >> w_gauf, "0"
+    print >> w_gauf, "SDD"
+    print >> w_gauf, "****"
+    print >> w_gauf, " "
+
+    for i in atnames:
+      if Atomic_Num[i] >= 19:
+        print >> w_gauf, i
+    print >> w_gauf, "0"
+    print >> w_gauf, "SDD"
+    print >> w_gauf, "****"
+    w_gauf.close()
 
 def write_gau_optf(outf, goptf, totchg, SpinNum, gatms, signum=3):
 
@@ -23,7 +55,7 @@ def write_gau_optf(outf, goptf, totchg, SpinNum, gatms, signum=3):
     print >> optf, " "
     print >> optf, "CLR"
     print >> optf, " "
-    print >> optf, "%d  %d" %(int(totchg), SpinNum)
+    print >> optf, "%d  %d" %(int(round(totchg, 0)), SpinNum)
     optf.close()
 
     if signum == 3:
@@ -67,7 +99,7 @@ def write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict, IonL
     print >> mkf, " "
     print >> mkf, "CLR"
     print >> mkf, " "
-    print >> mkf, "%d  %d" %(int(totchg),SpinNum)
+    print >> mkf, "%d  %d" %(int(round(totchg, 0)),SpinNum)
     mkf.close()
 
     #For Gaussian file

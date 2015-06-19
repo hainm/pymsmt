@@ -237,7 +237,7 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
           bondinfo = [at1, at2]
           if set(atinres).intersection(set(bondinfo)) == set(bondinfo):
             blistinres.append(bondinfo)
- 
+
         #for the bonds inside a residue, to see whether there are two atoms
         #connect to the same atoms
         for j in range(0, len(blistinres)):
