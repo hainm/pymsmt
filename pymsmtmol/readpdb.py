@@ -2,7 +2,7 @@
 This is the code for reading and writting pdb files.
 """
 from __future__ import absolute_import
-from pymsmtmol.mol import Atom, Residue, Molecule
+from pymsmtmol.mol import Atom, Residue, Molecule, get_reslist
 from pymsmtmol.readmol2 import get_pure_type, get_pure_num
 from pymsmtmol.element import ionnamel, resnamel, CoRadiiDict, Metalpdb
 
@@ -76,7 +76,6 @@ def get_atominfo_fpdb(fname):
 def writepdb(mol0, mol, atids, fname):
 
     wf = open(fname, 'w')
-
     print >> wf, 'REMARK, BUILD BY MCPB.PY'
 
     resids = []
@@ -84,42 +83,28 @@ def writepdb(mol0, mol, atids, fname):
       if mol.atoms[i].resid not in resids:
         resids.append(mol.atoms[i].resid)
 
-    aaresids = []
-    for i in resids:
-      resname = mol0.residues[i].resname
-      if resname in resnamel:
-        aaresids.append(i)
+    reslist = get_reslist(mol, resids)
+
+    terlist = reslist.nterm + reslist.nonstd + reslist.water
+
+    terlist = list(set(terlist))
 
     for i in resids:
-      if i in aaresids:
-        for j in mol.residues[i].resconter:
-          atm = mol.atoms[j]
-          gtype = atm.gtype
-          atid = atm.atid
-          if len(atm.atname) == 3:
-            atname = atm.atname
-          else:
-            atname = atm.atname.center(4)
-          crd = atm.crd
-          resid = atm.resid
-          resname = mol.residues[resid].resname
-          print >> wf, "%-6s%5d %4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f" \
-                   %(gtype, atid, atname, resname, 'A', resid, crd[0], crd[1], crd[2], 1.00, 0.00)
-      else:
-        print >> wf, 'TER'
-        for j in mol.residues[i].resconter:
-          atm = mol.atoms[j]
-          gtype = atm.gtype
-          atid = atm.atid
-          if len(atname) == 3:
-            atname = atm.atname
-          else:
-            atname = atm.atname.center(4)
-          crd = atm.crd
-          resid = atm.resid
-          resname = mol.residues[resid].resname
-          print >> wf, "%-6s%5d %4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f" \
-                   %(gtype, atid, atname, resname, 'A', resid, crd[0], crd[1], crd[2], 1.00, 0.00)
+      if (i in terlist) and (i != min(resids)):
+        print >> wf, 'TER'     
+      for j in mol.residues[i].resconter:
+        atm = mol.atoms[j]
+        gtype = atm.gtype
+        atid = atm.atid
+        if len(atm.atname) == 3:
+          atname = atm.atname
+        else:
+          atname = atm.atname.center(4)
+        crd = atm.crd
+        resid = atm.resid
+        resname = mol.residues[resid].resname
+        print >> wf, "%-6s%5d %4s %3s %1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f" \
+                 %(gtype, atid, atname, resname, 'A', resid, crd[0], crd[1], crd[2], 1.00, 0.00)
     print >> wf, 'END'
     wf.close()
 

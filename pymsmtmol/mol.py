@@ -140,3 +140,41 @@ class gauatm:
       self.crdy = crdy
       self.crdz = crdz
 
+class residuelist:
+    def __init__(self, cterm, nterm, std, nonstd, water):
+        self.cterm = cterm
+        self.nterm = nterm
+        self.std = std
+        self.nonstd = nonstd
+        self.water = water
+
+def get_reslist(mol, resids):
+    cterm = []
+    nterm = []
+    std = []
+    nonstd = []
+    water = []
+
+    for i in resids:
+      resnamei = mol.residues[i].resname
+      atnames = []
+
+      for j in mol.residues[i].resconter:
+        atnamej = mol.atoms[j].atname
+        atnames.append(atnamej)
+
+      if set(['CA', 'N', 'C', 'O']) < set(atnames):
+        std.append(i)
+      else:
+        nonstd.append(i)
+      if 'OXT' in atnames:
+        cterm.append(i)
+      if resnamei in ['WAT', 'HOH']:
+        water.append(i)
+      if set(['H1', 'H2', 'H3']) < set(atnames):
+        nterm.append(i)
+
+    reslist = residuelist(cterm, nterm, std, nonstd, water)
+    return reslist
+
+
