@@ -1147,6 +1147,7 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
         msresids.append(mol.atoms[i].resid)
 
     msresids = msresids + metresids
+    msresids.sort()
 
     print "***The following residues are in the Metal Site:"
     totchg = 0.0

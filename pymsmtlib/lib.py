@@ -376,10 +376,16 @@ def get_parm_dict(ffchoice, gaff, frcmodfs):
     if gaff == 1:
 
       parmf2 = add + 'gaff.dat'
+      gaff_vsinfo = linecache.getline(parmf2, 1)
 
-      lndict2 = {'MASS': (2, 73), 'BOND': (75, 882), 'ANGL': (883, 5131),
-                 'DIHE': (5132, 5848), 'IMPR': (5849, 5887),
-                 'NONB': (5892, 5963)}
+      if 'Version 1.7, Nov 2013' in gaff_vsinfo:
+        lndict2 = {'MASS': (2, 73), 'BOND': (75, 882), 'ANGL': (883, 5131),
+                   'DIHE': (5132, 5848), 'IMPR': (5849, 5887),
+                   'NONB': (5892, 5963)}
+      elif 'Version 1.8, Mar 2015' in gaff_vsinfo:
+        lndict2 = {'MASS': (2, 73), 'BOND': (75, 907), 'ANGL': (908, 5526),
+                   'DIHE': (5527, 6267), 'IMPR': (6268, 6306),
+                   'NONB': (6311, 6382)}
 
       massparms2 = {}
       bondparms2 = {}
