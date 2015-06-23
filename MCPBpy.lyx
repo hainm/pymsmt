@@ -1,0 +1,544 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Subsubsection
+MCPB.py
+\begin_inset Index idx
+status open
+
+\begin_layout Plain Layout
+MCPB.py
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:MCPB.py"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout LyX-Code
+Usage: -i input_file -s/--step step_number
+\end_layout
+
+\begin_layout LyX-Code
+
+\end_layout
+
+\begin_layout LyX-Code
+Options:
+\end_layout
+
+\begin_layout LyX-Code
+  -h, --help               Show this help message and exit
+\end_layout
+
+\begin_layout LyX-Code
+  -i INPUTFILE             Input file name
+\end_layout
+
+\begin_layout LyX-Code
+  -s STEP, --step=STEP     Step number
+\end_layout
+
+\begin_layout LyX-Code
+
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+The following is an introduction of the variables in the input_file:
+\end_layout
+
+\begin_layout Standard
+(
+\emph on
+Reminder:
+\emph default
+ there should be no blank lines in the input_file.
+ The values or parameters should follow the variables separated by a space.)
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Required variables:
+\end_layout
+
+\begin_layout Description
+original_pdb This is the file name of the original PDB file, which should
+ have only one chain.
+ The PDB file should have hydrogen atoms and metal ions in it.
+ Users are advised to use an application like pdb4amber to clean up the
+ PDB file first.
+ They are also advised to add the hydrogen atoms by using a webserver such
+ as H++ before performing the modeling in MCPB.py.
+\end_layout
+
+\begin_layout Description
+ion_ids The PDB atom ID of the complex’s central metal ion.
+ It should be an integer value, depending on how many metal ions are included
+ in the metal complex.
+\end_layout
+
+\begin_layout Description
+ion_mol2files The name(s) of the ion(s) in the mol2 file(s) contained in
+ the metal center.
+ This can be one or several name(s), depending on how many kinds of ions
+ are included in the metal center.
+ The user can use antechamber to transfer the single ion PDB file to a mol2
+ file and then manually modify the atom type and the atomic charge of the
+ metal ion in the mol2 file.
+\end_layout
+
+\begin_layout Description
+ion_info This variable is only required for the nonbonded model without
+ refitting the residue charges (step number 4n2).
+ In all, there are four data points required for each metal ion: 1)  the
+ residue name of the metal ion in the PDB file; 2) the atom name of the
+ metal ion in the PDB file; 3) the element symbol of the metal ion; 4) the
+ charge (or oxidation state, which needs to be an integer) of the metal
+ ion.
+ For example: ZN ZN Zn 2 (the first two are the residue and atom name of
+ the Zn2+ ion in the PDB file, the third is its element symbol and the last
+ one is its charge).
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Optional variables:
+\end_layout
+
+\begin_layout Description
+group_name The group name the user has specified.
+ The group name is the prefix for different kinds of modeling files e.g.
+ PDB, fingerprint and Gaussian input files for different models.
+ [The default is MOL.]
+\end_layout
+
+\begin_layout Description
+cut_off The cutoff value is used to indicate there is a bond between the
+ metal ion and the surrounding atoms.
+ The unit is Angstroms.
+ [The default is 2.8.]
+\end_layout
+
+\begin_layout Description
+ionchg_fixation The variable used to fix the charge of the metal ion(s)
+ as an integer number (its oxidation state) or as a non-integer obtained
+ from the RESP charge fitting procedure.
+ 1 means yes, 0 means no.
+ [The default is 0.]
+\end_layout
+
+\begin_layout Description
+naa_mol2files The variable used to indicate non-amino acid mol2 file(s)
+ in the metal complex if there are any nonstandard residue(s) in the metal
+ complex.
+ Examples of nonstandard residues include hydroxyl group and ligand molecules.
+ For these residues, the user can use antechamber to generate the mol2 file(s)
+ by first doing an AM1-BCC or HF/6-31G* RESP charge fit and then assigning
+ an AMBER atom type (recommended for water or hydroxyl group) or a GAFF
+ atom type (recommended for ligand).
+ [The default value of this variable is the null list.]
+\end_layout
+
+\begin_layout Description
+force_field The user-designated name of the force field.
+ The current version supports ff94, ff99, ff99SB, ff03, ff03.r1, ff10, ff12SB
+ and ff14SB.
+ [The default is ff14SB.]
+\end_layout
+
+\begin_layout Description
+gaff A variable used to indicate the use of a GAFF force field during the
+ modeling.
+ 0 means no, 1 means yes.
+ [The default is 1.]
+\end_layout
+
+\begin_layout Description
+frcmod_files The variable used to indicate the parameter modification file(s)
+ for the nonstandard residue(s) (e.g.
+ frcmod file generated by parmchk for a ligand molecule) in the metal complex.
+ It can be one name or several names seperated by space.
+ [The default value of this variable is the null list.]
+\end_layout
+
+\begin_layout Description
+sqm_opt A variable used to indicate the use of SQM in AmberTools to do a
+ simulation of the sidechain and/or large model before using Gaussian to
+ perform the calculation.
+
+\emph on
+ Please note:
+\emph default
+ if 1, 2 or 3 are chosen, the first step of the modeling process will take
+ additional time (minutes for the sidechain model and hours for the large
+ model).
+ [The default is 0.]
+\end_layout
+
+\begin_layout Itemize
+  0 -- means no use of SQM.
+\end_layout
+
+\begin_layout Itemize
+  1 -- means the optimization is done only for the sidechain model.
+\end_layout
+
+\begin_layout Itemize
+  2 -- means the optimization is done only for the large model.
+\end_layout
+
+\begin_layout Itemize
+  3 -- means the optimization is done for both the sidechain and large models.
+\end_layout
+
+\begin_layout Description
+water_model The user-designated water model to be used in the molecular
+ modeling.
+ Options are TIP3P, SPCE and TIP4PEW.
+ [The default is TIP3P.]
+\end_layout
+
+\begin_layout Description
+ion_paraset The user-designated ion parameter set to be used in the nonbonded
+ model.
+ (This option has no influence on the metal ion VDW parameters in the bonded
+ model, in which the author has chosen certain VDW parameter sets for different
+ ions.) There are four options for this variable: HFE, CM, IOD and 12_6_4
+ (reminder: there are underlines between the numbers).
+ If you use the 12-6 Lennard-Jones nonbonded model, the recommended settings
+ are the HFE set for the +1 and -1 ions, the CM set for the +2 ions, and
+ the IOD set for the +3 and +4 ions.
+ They are also the default settings for these metal ions.
+\end_layout
+
+\begin_layout Description
+gau_version The version of Gaussian the user used to perform the Gaussian
+ calculations.
+ Two options are available, g03 and g09.
+ [The default is g03.]
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+The following is an explanation of the step number variables:
+\end_layout
+
+\begin_layout Standard
+Here are the options for the step_number:
+\end_layout
+
+\begin_layout Standard
+For step1 there are three options: 1a (default, same as specifying 1), 1m
+ and 1n.
+\end_layout
+
+\begin_layout Standard
+For step2 there are three options: 2e, 2s (default, same as specifying 2)
+ and 2z.
+\end_layout
+
+\begin_layout Standard
+For step3 there are four options:  3a, 3b (default, same as specifying 3),
+ 3c and 3d.
+\end_layout
+
+\begin_layout Standard
+For step4 there are three options: 4b (default, same as specifying 4), 4n1
+ and 4n2.
+\end_layout
+
+\begin_layout Standard
+The following is the detailed explanation of the steps used in the modeling
+ procedure:
+\end_layout
+
+\begin_layout Description
+Step1.
+ Used to generate the modeling files (e.g.
+ PDB, fingerprint and Gaussian input files) for different models (e.g.
+ sidechain, standard and large models).
+ Three options are available and their explanation is shown below.
+ Default is 1a.
+\end_layout
+
+\begin_layout Itemize
+1a -- Used to automatically rename the atom types of the center metal ions
+ and the surrounding bonded atoms in the standard fingerprint file.
+\end_layout
+
+\begin_layout Itemize
+1m -- Used to automatically rename only the atom type(s) of the center metal
+ ion(s) to the AMBER atomic ion atom type style in the standard fingerprint
+ file.
+\end_layout
+
+\begin_layout Itemize
+1n -- Used to generate the standard fingerprint file without renaming the
+ atom types.
+ Users can rename the atom type of the metal ion(s) and its ligating atoms
+ manually in the standard fingerprint file.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Please note:
+\emph default
+ Between using Step1 and Step2, the Gaussian calculations (if needed), should
+ be done for the sidechain model (to calculate the force constants) and
+ the large model (to do the RESP charge calculation) using Gaussian input
+ files.
+ Prior to the calculation, users can change the parameters (such as the
+ calculation method, basis set, etc.) in the Gaussian input files according
+ to their own preferences.
+ After finishing this procedure, the user can move on to Step2.
+\end_layout
+
+\begin_layout Description
+Step2.
+ Used to generate the frcmod file for the modeling.
+ In this step, a frcmod file (with pre.frcmod name at the end of the file
+ name), will be pre-generated.
+ This file includes all the parameters, except the bond and angle parameters
+ related to the metal ions.
+ Later, the final frcmod file will be generated which will include all the
+ parameters.
+ There are three methods to choose from: Empirical, Seminario and Z-matrix.
+ Each of these methods generates the metal ion-related bond and angle parameters.
+ Default is the 2s (Seminario method).
+\end_layout
+
+\begin_layout Itemize
+2e -- The Empirical method,
+\begin_inset CommandInset citation
+LatexCommand citep
+key "Li15c"
+
+\end_inset
+
+can generate the metal ion-related bond and angle parameters efficiently
+ without doing Gaussian calculations.
+ It only supports Zn2+ ion in the current version.
+\end_layout
+
+\begin_layout Itemize
+2s -- The Seminario method
+\begin_inset CommandInset citation
+LatexCommand citep
+key "Seminario96a"
+
+\end_inset
+
+ generates the force field parameters based on sub-matrices of the Cartesian
+ Hessian matrix obtained from quantum calculations.
+ This method requires a Gaussian fchk file (which can be generated from
+ a chk file by using the formchk command in Gaussian).
+\emph on
+Reminder:
+\emph default
+ both the geometry optimization and force constant calculation procedures
+ are needed to generate the final chk file and subsequent fchk file for
+ the force constant calculations done by the Seminario method.
+\end_layout
+
+\begin_layout Itemize
+2z -- The Z-matrix method generates the force field parameters by using
+ the Cartesian Hessian matrix obtained from the quantum calculations.
+ This method requires the force constant Gaussian output file (usually named
+ as a log file) after the geometry optimization and force constant calculations.
+\end_layout
+
+\begin_layout Description
+Step3.
+ Used to perform the RESP charge fitting and to generate the mol2 files
+ for the residues within the metal ion complex.
+ There are several fitting schemes available in this step.
+ The four options are shown below.
+ The default is 3b since Seminario/ChgModB was identified as the best combinatio
+n in the work of Peters et al.
+\begin_inset CommandInset citation
+LatexCommand citep
+key "Peters10a"
+
+\end_inset
+
+
+\emph on
+Reminder:
+\emph default
+ the ionchg_fixation variable is effective in this procedure, if the variable
+ is designated as 1, the ion charge restriction will be used as well as
+ one of the following choices.
+\end_layout
+
+\begin_layout Itemize
+3a -- Allows all the charges of the atoms in the ligating residues to change
+ without any restrictions.
+\end_layout
+
+\begin_layout Itemize
+3b -- Restrains the charges of the heavy backbone atoms in the ligating
+ residues according to the user-chosen force field.
+\end_layout
+
+\begin_layout Itemize
+3c -- Restrains the charges of the backbone atoms (both heavy and hydrogen
+ atoms) in the ligating residues according to the user-chosenforce field.
+\end_layout
+
+\begin_layout Itemize
+3d -- Restrains the charges of the backbone atoms (both heavy and hydrogen
+ atoms) and C beta atoms in the ligating residues according to the user-chosen
+ force field.
+\end_layout
+
+\begin_layout Description
+Step4.
+ Generates the leap input file.
+ The default is 4b.
+\end_layout
+
+\begin_layout Itemize
+4b -- Generates the leap input file for the bonded model.
+\end_layout
+
+\begin_layout Itemize
+4n1 -- Generates the leap input file for the nonbonded model and refits
+ the charge of the ligating residues.
+\end_layout
+
+\begin_layout Itemize
+4n2 -- Generates the leap input file for the nonbonded model without refitting
+ the charge of the ligating residues.
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Here are some suggestions for the parameterization procedure:
+\end_layout
+
+\begin_layout Standard
+1) For the modeling of the bonded model, the following steps are usually
+ needed (4 steps): 1a/1n
+\begin_inset Formula $\rightarrow$
+\end_inset
+
+2e/2s/2z
+\begin_inset Formula $\rightarrow$
+\end_inset
+
+3a/3b/3c/3d
+\begin_inset Formula $\rightarrow$
+\end_inset
+
+4b
+\end_layout
+
+\begin_layout Standard
+2) For the modeling of a non-bonded model with a refitted charge, users
+ can follow the workflow (3 steps): 1m
+\begin_inset Formula $\rightarrow$
+\end_inset
+
+3a/3b/3c/3d
+\begin_inset Formula $\rightarrow$
+\end_inset
+
+4n1
+\end_layout
+
+\begin_layout Standard
+3) For modeling with a normal nonbonded model (without fitting any charges),
+ users usually only need one step to perform the modeling (1 step): 4n2.
+\end_layout
+
+\end_body
+\end_document
