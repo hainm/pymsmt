@@ -396,15 +396,11 @@ else:
   fclogf = gname + '_sidechain_fc.log'
   mklogf = gname + '_large_mk.log'
 
-print fclogf, mklogf
-
 ##checkpoint file
 if options.fchkfile is not None:
   fcfchkf = options.fchkfile
 else:
   fcfchkf = gname + '_sidechain_opt.fchk'
-
-print fcfchkf
 
 ##tleap input file
 ileapf = gname + '_tleap.in'
