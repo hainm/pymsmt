@@ -119,6 +119,7 @@ def gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids,\
     print "******************************************************************"
 
     #---------------------Generate the new pdb file--------------------------
+    #mol0 is the old mol while mol is new mol file with new names
 
     mol0, atids0, resids0 = get_atominfo_fpdb(orpdbf)
     mol, atids, resids = get_atominfo_fpdb(orpdbf)
@@ -149,8 +150,7 @@ def gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids,\
       for i in resndict.keys():
         mol.residues[i].resname = resndict[i]
 
-    writepdb(mol0, mol, atids, fipdbf)
-
+    writepdb(mol, atids, fipdbf)
     #----------------------------get the atom names which changed atom type
     if model in [1, 2]:
       atomdefs = []
@@ -164,7 +164,8 @@ def gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids,\
             element = mol.atoms[int(line[1])].element
             atomdefs.append((atnewtype, element))
       fp0.close()
-    #---------------------------Get the bond information
+    #---------------------Get the bond information, mol2 is the standard model
+
     if model == 1:
       mol2, atids2, resids2 = get_atominfo_fpdb(stpdbf)
       blist = get_mc_blist(mol2, atids2, ionids, stfpf)

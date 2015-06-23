@@ -61,6 +61,10 @@ parser.add_option("-i", dest="inputfile", type='string',
                   help="Input file name")
 parser.add_option("-s", "--step", dest="step", type='string',
                   help="Step number")
+parser.add_option("--logf", dest="logfile", type='string',
+                  help="Step number")
+parser.add_option("--fchk", dest="fchkfile", type='string',
+                  help="Step number")
 (options, args) = parser.parse_args()
 
 #==============================================================================
@@ -385,12 +389,22 @@ prefcdf = gname + '_pre.frcmod'
 finfcdf = gname + '.frcmod'
 
 ##log file
-fclogf = gname + '_sidechain_fc.log'
-mklogf = gname + '_large_mk.log'
-fclogf2 = gname + '_sidechain_gms_fc.log'
+if options.logfile is not None:
+  fclogf = options.logfile
+  mklogf = options.logfile
+else:
+  fclogf = gname + '_sidechain_fc.log'
+  mklogf = gname + '_large_mk.log'
+
+print fclogf, mklogf
 
 ##checkpoint file
-fcfchkf = gname + '_sidechain_opt.fchk'
+if options.fchkfile is not None:
+  fcfchkf = options.fchkfile
+else:
+  fcfchkf = gname + '_sidechain_opt.fchk'
+
+print fcfchkf
 
 ##tleap input file
 ileapf = gname + '_tleap.in'

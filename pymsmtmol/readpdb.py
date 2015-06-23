@@ -73,7 +73,7 @@ def get_atominfo_fpdb(fname):
 
   return mol, atids, resids
 
-def writepdb(mol0, mol, atids, fname):
+def writepdb(mol, atids, fname):
 
     wf = open(fname, 'w')
     print >> wf, 'REMARK, BUILD BY MCPB.PY'
