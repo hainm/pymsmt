@@ -223,7 +223,8 @@ def gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids,\
         print >> lp, '}'
 
     #load lib and frcmod files for monovalent ions (for salt)
-    print >> lp, 'loadoff atomic_ions.lib'
+    if ff_choice in ['ff94', 'ff99', 'ff99SB', 'ff03', 'ff03.r1']:
+      print >> lp, 'loadoff atomic_ions.lib'
     print >> lp, 'loadamberparams frcmod.ions1lsm_hfe_%s' %watermodel
 
     #Load mol2 file for the refitting charge residues
