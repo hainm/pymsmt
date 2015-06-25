@@ -371,6 +371,7 @@ print 'The variable force_field is : ', ff_choice
 print 'The variable gaff is : ', gaff
 print 'The variable frcmodfs is : ', frcmodfs
 print 'The variable naa_mol2files is : ', naamol2fs
+print 'The variable software_version is : ', g0x
 print 'The variable water_model is : ', watermodel.upper()
 print 'The variable ion_paraset is : ', paraset.upper(), "(Only for nonbonded model)"
 

@@ -6,4 +6,4 @@ ion_mol2files ZN.mol2
 ion_info ZN ZN Zn 2
 force_field ff94
 gaff 1
-gau_version gms
+software_version gms

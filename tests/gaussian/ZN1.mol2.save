@@ -6,7 +6,7 @@ RESP Charge
  
  
 @<TRIPOS>ATOM
-      1 ZN         16.2000   57.4120   45.8330 Z1        1 ZN1      0.735460
+      1 ZN         16.2000   57.4120   45.8330 Z1        1 ZN1      0.599756
 @<TRIPOS>BOND
 @<TRIPOS>SUBSTRUCTURE
      1 ZN1         1 TEMP              0 ****  ****    0 ROOT
