@@ -3,7 +3,7 @@ This module is written for detecting the disulfide bond and renaming the
 residues.
 """
 from pymsmtmol.cal import calc_bond
-from pymsmtmol.element import resnamel
+from pymsmtmol.mol import get_reslist
 
 def get_diS_bond(mol, atids):
 
@@ -96,10 +96,11 @@ def rename_res(mol, atids):
                   else:
                     mol.residues[i].resname = 'CYM'
 
+    reslist = get_reslist(mol, resids)
+
     #rename the HN atom to H atom in amino acid residues
     for i in resids:
-      resname = mol.residues[i].resname
-      if resname in resnamel:
+      if i in reslist.std:
         for j in mol.residues[i].resconter:
           if mol.atoms[j].atname == 'HN':
             mol.atoms[j].atname = 'H'

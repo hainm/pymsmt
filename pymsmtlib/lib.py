@@ -52,10 +52,10 @@ def get_lib_dict(parms):
       chargedict[mol.residues[i].resname] = charge
 
       #Alias HN as H
-      atnames = [mol.atoms[k].atname for k in mol.residues[i].resconter]
-      if set(['H', 'N', 'C', 'O']) < set(atnames):
-        libdict[mol.residues[i].resname + '-HN'] = \
-        libdict[mol.residues[i].resname + '-H']
+      #atnames = [mol.atoms[k].atname for k in mol.residues[i].resconter]
+      #if set(['H', 'N', 'C', 'O']) < set(atnames):
+      #  libdict[mol.residues[i].resname + '-HN'] = \
+      #  libdict[mol.residues[i].resname + '-H']
     return libdict, chargedict
 
 #-----------------------------------------------------------------------------

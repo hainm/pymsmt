@@ -2,6 +2,7 @@
 This module contains the function to model leap input files for use.
 """
 from __future__ import absolute_import
+from pymsmtmol.mol import get_reslist
 from pymsmtmol.readpdb import get_atominfo_fpdb, writepdb
 from pymsmtmol.readmol2 import get_atominfo
 from pymsmtmol.getlist import get_mc_blist
@@ -122,6 +123,9 @@ def gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids,\
     #mol0 is the old mol while mol is new mol file with new names
 
     mol0, atids0, resids0 = get_atominfo_fpdb(orpdbf)
+
+    reslist0 = get_reslist(mol0, resids0)
+
     mol, atids, resids = get_atominfo_fpdb(orpdbf)
 
     #rename the residue names into AMBER style, e.g. HIS --> HID, HIP, HIE
@@ -284,7 +288,13 @@ def gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids,\
       for i in metcenres1:
         resname = mol0.residues[i].resname
         print 'Renamed residues includes: ' + str(i) + '-' + resname
-        if resname in resnamel:
+        if (i in reslist0.cterm) and (resname in reslist0.nterm):
+          pass
+        elif i in reslist0.nterm:
+          print >> lp, 'bond', 'mol.' + str(i) + '.C', 'mol.' + str(i+i) + '.N'
+        elif i in reslist0.cterm:
+          print >> lp, 'bond', 'mol.' + str(i-1) + '.C', 'mol.' + str(i) + '.N'
+        elif i in reslist0.std:
           print >> lp, 'bond', 'mol.' + str(i-1) + '.C', 'mol.' + str(i) + '.N'
           print >> lp, 'bond', 'mol.' + str(i) + '.C', 'mol.' + str(i+1) + '.N'
 

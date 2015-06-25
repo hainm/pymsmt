@@ -56,27 +56,31 @@ import warnings
 import os
 from optparse import OptionParser
 
-parser = OptionParser("usage: -i input_file -s/--step step_number")
+parser = OptionParser("usage: -i input_file -s/--step step_number \n"
+                      "       [--logf Gaussian/GAMESS-US output logfile] \n"
+                      "       [--fchk Gaussian fchk file]")
 parser.add_option("-i", dest="inputfile", type='string',
                   help="Input file name")
 parser.add_option("-s", "--step", dest="step", type='string',
                   help="Step number")
 parser.add_option("--logf", dest="logfile", type='string',
-                  help="Step number")
+                  help="Gaussian/GAMESS-US output logfile")
 parser.add_option("--fchk", dest="fchkfile", type='string',
-                  help="Step number")
+                  help="Gaussian fchk file")
 (options, args) = parser.parse_args()
 
 #==============================================================================
 # Get the input variables
 #==============================================================================
 # Print the title of the program
-print_title('MCPB.py')
+version = 'Beta V1.1'
+release_time = 'June 24 2015'
+print_title('MCPB.py', version, release_time)
 options.step = options.step.lower()
 
 # Default values
 cutoff = 2.8
-ionchgfix = 0
+chgfix_resids = []
 naamol2fs = []
 ff_choice = 'ff14SB'
 gaff = 1
@@ -85,6 +89,7 @@ gname = 'MOL'
 g0x = 'g03'
 ioninfo = []
 sqmopt = 0
+largeopt = 0
 watermodel = 'tip3p'
 paraset = 'cm'
 
@@ -179,24 +184,18 @@ for line in inputf:
         else:
             raise pymsmtError('Need to provide the mol2 file(s) for '
                               'ion_mol2files.')
-    #ionchgfix
-    elif line[0].lower() == 'ionchg_fixation':
-        if len(line) == 2:
+    #chgfix_resids
+    elif line[0].lower() == 'chgfix_resids':
+        if len(line) >= 2:
             try:
-                ionchgfix = int(line[1])
-                if ionchgfix not in [0, 1]:
-                    raise pymsmtError('Please provide 0 or 1 for the '
-                                      'ionchg_fixation option.')
+                chgfix_resids = line[1:]
+                chgfix_resids = [int(i) for i in chgfix_resids]
             except:
-                raise pymsmtError('Please provide a integral number for the '
-                                  'ionchg_fixation parameter.')
-        elif len(line) == 1:
-            warnings.warn('No ionchg_fixation parameter provided. '
-                          'Default value %d will be used.'
-                          %ionchgfix, pymsmtWarning)
+                raise pymsmtError('chgfix_resids need to be integer number(s).')
         else:
-            raise pymsmtError('More than one ionchg_fixation options '
-                              'provided.')
+            warnings.warn('No chgfix_resids parameter provided. '
+                          'Default value %d will be used.'
+                          %chgfix_resids, pymsmtWarning)
     #naamol2fs
     elif line[0].lower() == 'naa_mol2files':
         if len(line) >= 2:
@@ -209,19 +208,40 @@ for line in inputf:
         else:
             warnings.warn('No mol2 file is provided for '
                           'naa_mol2files.', pymsmtWarning)
-    #gau_version
-    elif line[0].lower() == 'gau_version':
+    #software_version
+    elif line[0].lower() == 'software_version':
         if len(line) == 2:
             g0x = line[1].lower()
             if g0x not in ['g03', 'g09', 'gms']:
-                raise pymsmtError('Please use either g03, g09 or GAMESS, '
-                                  'other versions are not gurantee to '
+                raise pymsmtError('Please use either g03, g09 or gms, '
+                                  'other software/versions are not gurantee to '
                                   'support.')
         elif len(line) == 1:
             warnings.warn('No g0x parameter provided. Default value '
                           '%s is used.' %g0x, pymsmtWarning)
         else:
-            raise pymsmtError('More than one gau_version parameters provided, '
+            raise pymsmtError('More than one software_version parameters '
+                              'provided, need one.')
+    #large_opt
+    elif line[0].lower() == 'large_opt':
+        if len(line) == 2:
+            try:
+                largeopt = int(line[1])
+                if largeopt not in [0, 1, 2]:
+                    raise pymsmtError('large_opt varible needs to be 0, 1 or '
+                                      '2. 0 means not using optimization in '
+                                      'Guassian input file for large model. 1 '
+                                      'means only optimize hydrogen positions '
+                                      'in Gaussian input file for large model. '
+                                      '2 means optimize the whole structure '
+                                      'in Gaussian input file for large model.')
+            except:
+                raise pymsmtError('large_opt value is not integer value.')
+        elif len(line) == 1:
+            warnings.warn('No large_opt parameter provided. '
+                                'Default value %d is used.' %largeopt, pymsmtWarning)
+        else:
+            raise pymsmtError('More than one large_opt parameter provided, '
                               'need one.')
     #sqmopt
     elif line[0].lower() == 'sqm_opt':
@@ -343,9 +363,10 @@ except:
 
 print 'The variable group_name is : ', gname
 print 'The variable cut_off is : ', cutoff
-print 'The variable ionchg_fixation is : ', ionchgfix
-print 'The variable gau_version is : ', g0x
+print 'The variable chgfix_resids is : ', chgfix_resids
+print 'The variable software_version is : ', g0x
 print 'The variable sqm_opt is : ', sqmopt
+print 'The variable large_opt is : ', largeopt
 print 'The variable force_field is : ', ff_choice
 print 'The variable gaff is : ', gaff
 print 'The variable frcmodfs is : ', frcmodfs
@@ -419,16 +440,16 @@ ileapf = gname + '_tleap.in'
 #    complex.
 if (options.step == '1'):
     gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
-                     watermodel, 2, sqmopt)
+                     watermodel, 2, largeopt, sqmopt)
 elif (options.step == '1n'):
     gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
-                     watermodel, 0, sqmopt)
+                     watermodel, 0, largeopt, sqmopt)
 elif (options.step == '1m'):
     gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
-                     watermodel, 1, sqmopt)
+                     watermodel, 1, largeopt, sqmopt)
 elif (options.step == '1a'):
     gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
-                     watermodel, 2, sqmopt)
+                     watermodel, 2, largeopt, sqmopt)
 #==============================================================================
 # Step 2 Frcmod file generation
 #==============================================================================
@@ -470,19 +491,19 @@ elif (options.step == '2z'):
 #    according to force field chosen
 elif (options.step == '3'): #Default
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 1, ionchgfix, g0x)
+                 premol2fs, mcresname, 1, chgfix_resids, g0x)
 elif (options.step == '3a'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 0, ionchgfix, g0x)
+                 premol2fs, mcresname, 0, chgfix_resids, g0x)
 elif (options.step == '3b'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 1, ionchgfix, g0x)
+                 premol2fs, mcresname, 1, chgfix_resids, g0x)
 elif (options.step == '3c'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 2, ionchgfix, g0x)
+                 premol2fs, mcresname, 2, chgfix_resids, g0x)
 elif (options.step == '3d'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 3, ionchgfix, g0x)
+                 premol2fs, mcresname, 3, chgfix_resids, g0x)
 #==============================================================================
 # Step 4 Prepare the modeling file for leap
 #==============================================================================

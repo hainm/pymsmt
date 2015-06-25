@@ -13,7 +13,7 @@ def write_gms_optf(goptf2, totchg, SpinNum, gatms, signum=3):
     ##GAMESS OPT file
     optf2 = open(goptf2, 'w')
     print >> optf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
-    print >> optf2, " $CONTRL DFTTYP=B3LYP RUNTYP=OPTIMIZE ICHARG=%d MULT=%d $END" %(int(round(totchg, 0)), SpinNum)
+    print >> optf2, " $CONTRL DFTTYP=B3LYP RUNTYP=OPTIMIZE ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
     print >> optf2, " $STATPT NSTEP=1000 $END"
     print >> optf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
     print >> optf2, " $DATA"
@@ -35,7 +35,7 @@ def write_gms_fcf(gfcf2, totchg, SpinNum):
     ##GAMESS FC file
     fcf2 = open(gfcf2, 'w')
     print >> fcf2, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
-    print >> fcf2, " $CONTRL DFTTYP=B3LYP RUNTYP=HESSIAN ICHARG=%d MULT=%d $END" %(int(round(totchg, 0)), SpinNum)
+    print >> fcf2, " $CONTRL DFTTYP=B3LYP RUNTYP=HESSIAN ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
     print >> fcf2, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"
     print >> fcf2, " $DATA"
     print >> fcf2, "Cluster/6-31G"
@@ -49,7 +49,7 @@ def write_gms_mkf(gmsf, totchg, SpinNum, gatms, signum=3):
     #For GAMESS MK Charge file
     w_gmsf = open(gmsf, 'w')
     print >> w_gmsf, " $SYSTEM MEMDDI=400 MWORDS=200 $END"
-    print >> w_gmsf, " $CONTRL DFTTYP=B3LYP ICHARG=%d MULT=%d $END" %(int(round(totchg, 0)), SpinNum)
+    print >> w_gmsf, " $CONTRL DFTTYP=B3LYP ICHARG=%d MULT=%d $END" %(totchg, SpinNum)
     print >> w_gmsf, " $ELPOT IEPOT=1 WHERE=PDC $END"
     print >> w_gmsf, " $PDC PTSEL=CONNOLLY CONSTR=NONE $END"
     print >> w_gmsf, " $BASIS GBASIS=N31 NGAUSS=6 NDFUNC=1 $END"

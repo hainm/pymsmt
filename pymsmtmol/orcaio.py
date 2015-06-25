@@ -17,7 +17,7 @@ def write_orca_optf(outf, ofcf, totchg, SpinNum, gatms):
     print >> orcafcf, "end"
     print >> orcafcf, "! Opt"
     print >> orcafcf, "%%base \"%s\"" %outf
-    print >> orcafcf, '*xyz', str(int(totchg)), str(SpinNum)
+    print >> orcafcf, '*xyz', str(totchg), str(SpinNum)
     orcafcf.close()
 
     #Coordinates

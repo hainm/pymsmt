@@ -188,6 +188,199 @@ def write_ace(mol, i, gatms, pdbf, fpf=None):
           print >> fpff, str(resid) + '-' + 'ACE-' + atname
           fpff.close()
 
+#---------------------Write CH3NH2 residue into the PDB file-------------------
+def write_ant(mol, i, gatms, pdbf, fpf=None):
+
+    """
+    ANT group
+    a. N, H1/HN1, H2/HN2, H3/HN3 atoms are kept.
+    b. CA --> CH3
+    c. C, HA/HA2, CB/HA3 --> Three Hs bonds to CH3 with adapting the bond length.
+    d. other atoms are deleted
+
+    If there is a PRO was treated as ACT, there will be no influence.
+    """
+
+    global H_NAMES, SH_NAMES, GH_NAMES
+
+    #If the resname is not PRO, keep the NH2 or NH3 group, delete the sidechain
+    #and change CA to CH3, HA, CB and C to HH31, HH32, HH33
+    if mol.residues[i].resname != 'PRO':
+
+      print "Creating the residue " + str(i) + '-' + \
+            mol.residues[i].resname + " into ANT..."
+
+      #get the coordinates of the CA atom
+      for j in mol.residues[i].resconter:
+        atname = mol.atoms[j].atname
+        if atname == 'CA':
+          cacrd = mol.atoms[j].crd
+     
+      atnames = []
+      hdict = {}
+    
+      #rename the atom names to get the large model
+      for j in mol.residues[i].resconter:
+        atname = mol.atoms[j].atname
+        if (atname in ['C', 'HA', 'HA2', 'CB', 'HA3']):
+          atnames.append(atname)
+    
+      for j in range(0, len(atnames)):
+        hdict[atnames[j]] = H_NAMES[j]
+ 
+      for j in mol.residues[i].resconter:
+        atname = mol.atoms[j].atname
+        if (atname in ['N', 'H1', 'H2', 'H3', 'HN1', 'HN2', 'HN3', 'CA', 'HA', 'HA2', 'CB', 'HA3']):
+          if (atname == 'N'):
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = atname
+          elif (atname in ['HN1', 'H1']):
+            atname = 'H1'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'H'
+          elif (atname in ['HN2', 'H2']):
+            atname = 'H2'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'H'
+          elif (atname in ['HN3', 'H3']):
+            atname = 'H3'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'H'
+          elif (atname == 'CA'):
+            atname = 'CH3'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'C'
+          else: #left were C, HA/HA2, CB/HA3
+            atname = hdict[atname]
+            bvec = calc_bond(cacrd, mol.atoms[j].crd)
+            crdx = cacrd[0] + bdld['CH'] * (mol.atoms[j].crd[0] - cacrd[0])/bvec
+            crdy = cacrd[1] + bdld['CH'] * (mol.atoms[j].crd[1] - cacrd[1])/bvec
+            crdz = cacrd[2] + bdld['CH'] * (mol.atoms[j].crd[2] - cacrd[2])/bvec
+            element = 'H'
+     
+          crdx = round(crdx, 3)
+          crdy = round(crdy, 3)
+          crdz = round(crdz, 3)
+      
+          #gaussian file
+          gatms.append(gauatm(element, crdx, crdy, crdz))
+      
+          #assign other parameters to it
+          tiker = mol.atoms[j].gtype
+          atid = mol.atoms[j].atid
+          chainid = 'A'
+          resid = mol.atoms[j].resid
+          resname = 'ANT'
+          occp = 1.00
+          tempfac = 0.00
+     
+          #pdb file
+          atmi = pdbatm(tiker, atid, atname, resname, chainid, resid,
+                        crdx, crdy, crdz, occp, tempfac)
+          writepdbatm(atmi, pdbf)
+ 
+          #fingerprint file
+          if fpf is not None:
+            fpff = open(fpf, 'a')
+            print >> fpff, str(resid) + '-' + 'ANT-' + atname
+            fpff.close()
+
+    #If the resname is PRO, change HA, C to HA2, HA3 and keep the ring
+    elif mol.residues[i].resname == 'PRO':
+
+      print "Creating the residue " + str(i) + '-' + \
+            mol.residues[i].resname + " into ANT..."
+
+      #get the coordinates of the CA atom
+      for j in mol.residues[i].resconter:
+        atname = mol.atoms[j].atname
+        if atname == 'CA':
+          cacrd = mol.atoms[j].crd
+     
+      atnames = []
+      hdict = {}
+  
+      #rename the atom names to get the large model
+      for j in mol.residues[i].resconter:
+        atname = mol.atoms[j].atname
+        if (atname in ['HA', 'C']):
+          atnames.append(atname)
+
+      for j in range(0, len(atnames)):
+        hdict[atnames[j]] = GH_NAMES[j]
+
+      for j in mol.residues[i].resconter:
+        atname = mol.atoms[j].atname
+        if (atname != 'O'):
+          if (atname in ['HN1', 'H1']):
+            atname = 'H1'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'H'
+          elif (atname in ['HN2', 'H2']):
+            atname = 'H2'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'H'
+          elif (atname in ['HN3', 'H3']):
+            atname = 'H3'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'H'
+          elif (atname in ['C', 'HA']):
+            #left were C, HA
+            atname = hdict[atname]
+            bvec = calc_bond(cacrd, mol.atoms[j].crd)
+            crdx = cacrd[0] + bdld['CH'] * (mol.atoms[j].crd[0] - cacrd[0])/bvec
+            crdy = cacrd[1] + bdld['CH'] * (mol.atoms[j].crd[1] - cacrd[1])/bvec
+            crdz = cacrd[2] + bdld['CH'] * (mol.atoms[j].crd[2] - cacrd[2])/bvec
+            element = 'H'
+          else:
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = mol.atoms[j].element
+
+          crdx = round(crdx, 3)
+          crdy = round(crdy, 3)
+          crdz = round(crdz, 3)
+     
+          #gaussian file
+          gatms.append(gauatm(element, crdx, crdy, crdz))
+      
+          #assign other parameters to it
+          tiker = mol.atoms[j].gtype
+          atid = mol.atoms[j].atid
+          chainid = 'A'
+          resid = mol.atoms[j].resid
+          resname = 'PNT'
+          occp = 1.00
+          tempfac = 0.00
+     
+          #pdb file
+          atmi = pdbatm(tiker, atid, atname, resname, chainid, resid,
+                        crdx, crdy, crdz, occp, tempfac)
+          writepdbatm(atmi, pdbf)
+ 
+          #fingerprint file
+          if fpf is not None:
+            fpff = open(fpf, 'a')
+            print >> fpff, str(resid) + '-' + 'PNT-' + atname
+            fpff.close()
+
 #---------------------Write CH3CO2- residue into the PDB file---------------------
 def write_act(mol, i, gatms, pdbf, fpf=None):
 
@@ -730,7 +923,9 @@ def write_sc(mol, i, gatms, sidechf):
 
 #-----------------------Write Sidechain residues2-------------------------------
 
-#By keeping the N, H group inside the residue
+#By keeping the N, H group inside the residue, this residue is coordinate
+#to the metal ion and it is beside the residue which use backbone Oxygen
+#to coordinate with the metal ion
 
 def write_sc2(mol, i, gatms, sidechf):
 
@@ -745,7 +940,7 @@ def write_sc2(mol, i, gatms, sidechf):
       if atname == 'CA':
         cacrd = mol.atoms[j].crd
 
-    #N, C, HA are three Hs in the sidechain model
+    #C, HA are two Hs in the sidechain model
     atnames = []
     hdict = {}
 
@@ -806,9 +1001,83 @@ def write_sc2(mol, i, gatms, sidechf):
                       crdx, crdy, crdz, occp, tempfac)
         writepdbatm(atmi, sidechf)
 
+#-----------------------Write Sidechain residues3-------------------------------
+
+#By keeping the C, O group inside the residue, this residue is coordinate
+#to the metal ion and it is beside the residue which use backbone Nitrogen
+#to coordinate with the metal ion
+
+def write_sc3(mol, i, gatms, sidechf):
+
+    global H_NAMES, SH_NAMES, GH_NAMES, SH_NAMES2
+
+    print "It contains the residue " + str(i) + '-' + \
+          mol.residues[i].resname
+
+    #get the coordinates of the Ca atom
+    for j in mol.residues[i].resconter:
+      atname = mol.atoms[j].atname
+      if atname == 'CA':
+        cacrd = mol.atoms[j].crd
+
+    #C, HA are two Hs in the sidechain model
+    atnames = []
+    hdict = {}
+
+    for j in mol.residues[i].resconter:
+      atname = mol.atoms[j].atname
+      if (atname in ['N', 'HA']):
+        atnames.append(atname)
+
+    for j in range(0, len(atnames)):
+      hdict[atnames[j]] = SH_NAMES2[j]
+
+    for j in mol.residues[i].resconter:
+      atname = mol.atoms[j].atname
+      if (atname not in ['H', 'H1', 'H2', 'H3', 'HN', 'HN1', 'HN2', 'HN3']):
+        resname = mol.residues[i].resname
+        if (atname == 'CA'):
+          atname = 'CH3'
+          crdx = mol.atoms[j].crd[0]
+          crdy = mol.atoms[j].crd[1]
+          crdz = mol.atoms[j].crd[2]
+          element = 'C'
+        elif (atname in ['N', 'HA']):
+          atname = hdict[atname]
+          bvec = calc_bond(cacrd, mol.atoms[j].crd)
+          crdx = cacrd[0] + bdld['CH'] * (mol.atoms[j].crd[0] - cacrd[0])/bvec
+          crdy = cacrd[1] + bdld['CH'] * (mol.atoms[j].crd[1] - cacrd[1])/bvec
+          crdz = cacrd[2] + bdld['CH'] * (mol.atoms[j].crd[2] - cacrd[2])/bvec
+          element = 'H'
+        else:
+          crdx = mol.atoms[j].crd[0]
+          crdy = mol.atoms[j].crd[1]
+          crdz = mol.atoms[j].crd[2]
+          element = mol.atoms[j].element
+
+        crdx = round(crdx, 3)
+        crdy = round(crdy, 3)
+        crdz = round(crdz, 3)
+
+        #Gaussian file
+        gatms.append(gauatm(element, crdx, crdy, crdz))
+    
+        tiker = mol.atoms[j].gtype
+        atid = mol.atoms[j].atid
+        chainid = 'A'
+        resid = mol.atoms[j].resid
+        resname = mol.residues[resid].resname
+        occp = 1.00
+        tempfac = 0.00
+
+        #PDB file
+        atmi = pdbatm(tiker, atid, atname, resname, chainid, resid,
+                      crdx, crdy, crdz, occp, tempfac)
+        writepdbatm(atmi, sidechf)
+
 #------------------------------Sidechain------------------------------------
 def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
-                          scresact, scresknh, totchg, outf, sqmopt):
+        scresant, scresact, scresknh, screskco, totchg, outf, sqmopt):
 
     """
     For building the sidechain model
@@ -855,16 +1124,22 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
       #2) For residue switching to NME
       elif i in scresnme:
         write_nme(mol, i, gatms, sidechf)
-      #3) For residue switching to CH3CO2-
+      #3) For residue switching to CH3NH3+
+      elif i in scresant:
+        write_ant(mol, i, gatms, sidechf)
+      #4) For residue switching to CH3CO2-
       elif i in scresact:
         write_act(mol, i, gatms, sidechf)
-      #4) For residue which keep N and H in the model
+      #5) For residue which keep N and H in the model
       elif i in scresknh:
         write_sc2(mol, i, gatms, sidechf)
-      #5) For normal amino acid residues
+      #6) For residue which keep C and O in the model
+      elif i in screskco:
+        write_sc3(mol, i, gatms, sidechf)
+      #7) For normal amino acid residues
       elif i in reslist.std:
         write_sc(mol, i, gatms, sidechf)
-      #6) For speical residue
+      #8) For speical residue
       else:
         write_normal(mol, reslist, i, gatms, sidechf)
 
@@ -884,7 +1159,7 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
     if SpinNum%2 == 0:
       SpinNum = 1
     else:
-     SpinNum = 2
+      SpinNum = 2
 
     #Gaussian
     write_gau_optf(outf, goptf, totchg, SpinNum, gatms)
@@ -950,9 +1225,16 @@ def build_standard_model(mol, reslist, cutoff, msresids, outf, ionids,
         crdy = round(crdy, 3)
         crdz = round(crdz, 3)
 
-        attype = libdict[resname + '-' + atname][0]
+        if i in reslist.nterm:
+          attype = libdict['N'+resname + '-' + atname][0]
+        elif i in reslist.cterm:
+          attype = libdict['C'+resname + '-' + atname][0]
+        else:
+          attype = libdict[resname + '-' + atname][0]
+
         atmi = pdbatm(tiker, atid, atname, resname, chainid, resid,
                       crdx, crdy, crdz, occp, tempfac)
+
         writepdbatm(atmi, stf)
         stpff = open(stpf, 'a')
 
@@ -986,6 +1268,12 @@ def build_standard_model(mol, reslist, cutoff, msresids, outf, ionids,
             elif j == bdedatms[k] and k >= 9:
               k4 = k - 9 + 1
               attype2 = 'Y' + str(k4)
+            elif j == bdedatms[k] and k >= 18:
+              k5 = k - 18 + 1
+              attype2 = 'A' + str(k5)
+            elif j == bdedatms[k] and k >= 27:
+              k6 = k - 27 + 1
+              attype2 = 'B' + str(k6)
 
         print >> stpff, str(resid) + '-' + resname + '-' + atname, \
                  str(atid), attype, '->', attype2
@@ -1007,7 +1295,7 @@ def build_standard_model(mol, reslist, cutoff, msresids, outf, ionids,
 #---------------------------------Large model---------------------------------
 def build_large_model(mol, reslist, lmsresids, lmsresace, lmsresnme,
                       lmsresgly, ionids, chargedict, totchg, outf,
-                      watermodel, sqmopt):
+                      watermodel, largeopt, sqmopt):
 
     #Large model file
     largef = outf + '_large.pdb'
@@ -1060,7 +1348,8 @@ def build_large_model(mol, reslist, lmsresids, lmsresace, lmsresnme,
     IonLJParaDict = get_ionljparadict(watermodel)
     ionnames = [mol.atoms[i].atname for i in ionids]
     ionnames = list(set(ionnames))
-    write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict, IonLJParaDict)
+    write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames,
+                  chargedict, IonLJParaDict, largeopt)
 
     #For GAMESS file
     write_gms_mkf(gmsf, totchg, SpinNum, gatms)
@@ -1075,14 +1364,15 @@ def build_large_model(mol, reslist, lmsresids, lmsresace, lmsresnme,
         print "Performing SQM optimization of large model, please wait..."
         os.system("sqm -i %s -o %s" %(simkf, somkf))
         gatms2 = get_crdinfo_from_sqm(somkf)
-        write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict, IonLJParaDict, 4)
+        write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames,
+                      chargedict, IonLJParaDict, largeopt, 4)
         write_gms_mkf(gmsf, totchg, SpinNum, gatms2, 4)
       else:
         print "Could not perform SQM optimization for the large model " + \
               "with spin number not equal to 1."
 
 def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
-                     watermodel, autoattyp, sqmopt):
+                     watermodel, autoattyp, largeopt, sqmopt):
 
     mol, atids, resids = get_atominfo_fpdb(pdbfile)
 
@@ -1139,8 +1429,14 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
     totchg = 0.0
     for i in msresids:
       print "Residue " + str(i) + '-' + mol.residues[i].resname
-      totchg = totchg + chargedict[mol.residues[i].resname]
- 
+      if i in reslist.nterm:
+        totchg = totchg + chargedict['N' + mol.residues[i].resname]
+      elif i in reslist.cterm:
+        totchg = totchg + chargedict['C' + mol.residues[i].resname]
+      else:
+        totchg = totchg + chargedict[mol.residues[i].resname]
+    totchg = int(round(totchg, 0))
+
     #-------------------------------------------------------------------------
     # Get the residues for building the sidechain model and print
     #-------------------------------------------------------------------------
@@ -1149,8 +1445,12 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
     scresace = []
     scresnme = []
     scresact = []
-    scresknh = [] #Residues to keep n and h, which is connect to the residue
+    scresant = []
+    scresknh = [] #Residues to keep N and H, which is connect to the residue
                   #which has backbone oxygen bond to the ion and also bond to
+                  #to the ion but with sidechain
+    screskco = [] #Residues to keep C and O, which is connect to the residue
+                  #which has backbone nitrogen bond to the ion and also bond to
                   #to the ion but with sidechain
 
     bdedresids = []
@@ -1172,7 +1472,9 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
 
     for resid in bdedresids:
       resatns = bdedresdict[resid]
-      if resid in reslist.cterm:
+      if resid in reslist.nterm:
+        scresant.append(resid)
+      elif resid in reslist.cterm:
         scresact.append(resid)
       elif (resid in reslist.std) and ('O' in resatns):
         scresace.append(resid)
@@ -1181,6 +1483,13 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
           scresnme.append(resid+1)
         elif (resid+1 in reslist.std) and (resid+1 in scresids):
           scresknh.append(resid+1)
+      elif (resid in reslist.std) and ('N' in resatns):
+        scresnme.append(resid)
+        if (resid-1 in reslist.std) and (resid-1 not in scresids):
+          scresids.append(resid-1)
+          scresace.append(resid-1)
+        elif (resid-1 in reslist.std) and (resid-1 in scresids):
+          screskco.append(resid-1)
 
     print "***The sidechain model contains the following residues: "
     print scresids
@@ -1194,23 +1503,30 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
     lmsresnme = [] #large model metal site NME
     lmsresgly = [] #large model metal site GLY
 
+    resamino = reslist.nterm + reslist.cterm + reslist.std
+    resamino.sort()
+
     #First several residues
     for i in range(0, len(msresids)-1):
       resi = msresids[i]
       resj = msresids[i+1]
-      resnamei = mol.residues[resi].resname
-      resnamej = mol.residues[resj].resname
-      if resi in reslist.std:
-        if (resj in reslist.std) and (resj - resi <= 5):
+      if resi in resamino:
+        if (set(range(resi, resj+1)) < set(resamino)) and (resj - resi <= 5):
         #If two residues within 5 residues apart, treat the residue as GLY
           for j in resids:
-            if (j > resi) and (j < resj) and (j not in msresids):
+            if (j > resi) and (j < resj) and (j not in lmsresgly):
               lmsresgly.append(j) #GLY
 
     for i in range(0, len(msresids)):
       resid = msresids[i]
       resname = mol.residues[resid].resname
-      if resid in reslist.std:
+      if resid in reslist.nterm:
+        if (resid+1 not in lmsresgly) and (resid+1 not in msresids):
+          lmsresnme.append(resid+1) #NME
+      elif resid in reslist.cterm:
+        if (resid-1 not in lmsresgly) and (resid-1 not in msresids):
+          lmsresace.append(resid-1) #ACE
+      elif resid in reslist.std:
         if (resid-1 not in lmsresgly) and (resid-1 not in msresids):
           lmsresace.append(resid-1) #ACE
         if (resid+1 not in lmsresgly) and (resid+1 not in msresids):
@@ -1234,13 +1550,13 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
     print "******************************************************************"
 
     build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
-                          scresact, scresknh, totchg, outf, sqmopt)
+                 scresant, scresact, scresknh, screskco, totchg, outf, sqmopt)
 
     build_standard_model(mol, reslist, cutoff, msresids, outf, ionids,
                          bdedatms, libdict, autoattyp)
 
     build_large_model(mol, reslist, lmsresids, lmsresace, lmsresnme, lmsresgly,
-                      ionids, chargedict, totchg, outf, watermodel, sqmopt)
+               ionids, chargedict, totchg, outf, watermodel, largeopt, sqmopt)
 
     #Using the automatically detect bond method for the backup
     #else:

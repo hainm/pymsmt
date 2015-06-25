@@ -163,16 +163,21 @@ def get_reslist(mol, resids):
         atnamej = mol.atoms[j].atname
         atnames.append(atnamej)
 
-      if set(['CA', 'N', 'C', 'O']) < set(atnames):
+      if (set(['CA', 'N', 'C', 'O', 'OXT', 'H1', 'H2', 'H3']) < set(atnames)) or \
+         (set(['CA', 'N', 'C', 'O', 'OXT', 'HN1', 'HN2', 'HN3']) < set(atnames)):
+        nonstd.append(i)
+      elif (set(['CA', 'N', 'C', 'O', 'H1', 'H2', 'H3']) < set(atnames)) or \
+           (set(['CA', 'N', 'C', 'O', 'HN1', 'HN2', 'HN3']) < set(atnames)):
+        nterm.append(i)
+      elif set(['CA', 'N', 'C', 'O', 'OXT']) < set(atnames):
+        cterm.append(i)
+      elif set(['CA', 'N', 'C', 'O']) < set(atnames):
         std.append(i)
       else:
         nonstd.append(i)
-      if 'OXT' in atnames:
-        cterm.append(i)
+
       if resnamei in ['WAT', 'HOH']:
         water.append(i)
-      if set(['H1', 'H2', 'H3']) < set(atnames):
-        nterm.append(i)
 
     reslist = residuelist(cterm, nterm, std, nonstd, water)
     return reslist

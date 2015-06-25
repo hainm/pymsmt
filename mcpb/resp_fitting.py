@@ -3,7 +3,8 @@ This module was written for generating the resp fitting input file and doing
 the RESP charge fitting.
 """
 from __future__ import absolute_import
-from pymsmtmol.element import resnamel, Atnum
+from pymsmtmol.mol import get_reslist
+from pymsmtmol.element import Atnum
 from pymsmtmol.readpdb import get_atominfo_fpdb
 from pymsmtmol.getlist import get_mc_blist
 from pymsmtmol.gauio import get_esp_from_gau
@@ -74,8 +75,200 @@ def print_mol2f(resid, resname1, resname2, resconter, mol, iddict1, sddict, \
                     '              0 ****  ****    0 ROOT'
     mol2f.close()
 
+def get_equ_for_ang(mol, angresids, resids, iddict):
+
+    #for ACE, NME and GLY residues
+    acedict = {}
+    nmedict = {}
+    glydict = {}
+    ace1st = 0
+    nme1st = 0
+    gly1st = 0
+
+    for resid in resids:
+      if (resid in angresids) and (mol.residues[i].resname == 'ACE'):
+        if ace1st < 1:
+        #get the ids in the first ACE group
+          for j in mol.residues[resid].resconter:
+            atname = mol.atoms[j].atname
+            if (atname in ['HH31', 'CH3', 'C', 'O']):
+              iddict[j] = (iddict[j][0], iddict[j][1], 0)
+              acedict[atname] = iddict[j][0]
+            elif (atname in ['HH32', 'HH33']):
+              iddict[j] = (iddict[j][0], iddict[j][1], acedict['HH31'])
+        else:
+          for j in mol.residues[resid].resconter:
+            atname = mol.atoms[j].atname
+            if (atname in ['HH31', 'CH3', 'C', 'O']):
+              iddict[j] = (iddict[j][0], iddict[j][1], acedict[atname])
+            elif (atname in ['HH32', 'HH33']):
+              iddict[j] = (iddict[j][0], iddict[j][1], acedict['HH31'])
+        ace1st = ace1st + 1
+      elif (resid in angresids) and (mol.residues[i].resname == 'NME'):
+        if nme1st < 1:
+        #get the ids in the first ACE group
+          for j in mol.residues[resid].resconter:
+            atname = mol.atoms[j].atname
+            if (atname in ['N', 'CH3', 'HH31', 'H']):
+              iddict[j] = (iddict[j][0], iddict[j][1], 0)
+              nmedict[atname] = iddict[j][0]
+            elif (atname in ['HH32', 'HH33']):
+              iddict[j] = (iddict[j][0], iddict[j][1], nmedict['HH31'])
+        else:
+          for j in mol.residues[resid].resconter:
+            atname = mol.atoms[j].atname
+            if (atname in ['N', 'CH3', 'HH31', 'H']):
+              iddict[j] = (iddict[j][0], iddict[j][1], nmedict[atname])
+            elif (atname in ['HH32', 'HH33']):
+              iddict[j] = (iddict[j][0], iddict[j][1], nmedict['HH31'])
+        nme1st = nme1st + 1
+      #for GLY residues
+      elif (resid in angresids) and (mol.residues[i].resname == 'GLY'):
+        if gly1st < 1:
+        #get the ids of the first GLY group
+          for j in mol.residues[resid].resconter:
+            atname = mol.atoms[j].atname
+            if (atname in ['N', 'H', 'C', 'O', 'CA', 'HA2']):
+              iddict[j] = (iddict[j][0], iddict[j][1], 0)
+              glydict[atname] = iddict[j][0]
+            elif (atname in ['HA3']):
+              iddict[j] = (iddict[j][0], iddict[j][1], glydict['HA2'])
+        else:
+          for j in mol.residues[resid].resconter:
+            atname = mol.atoms[j].atname
+            if (atname in ['N', 'H', 'C', 'O', 'CA', 'HA2']):
+              iddict[j] = (iddict[j][0], iddict[j][1], glydict[atname])
+            elif (atname in ['HA3']):
+              iddict[j] = (iddict[j][0], iddict[j][1], glydict['HA2'])
+        gly1st = gly1st + 1
+
+def frozen_ang(mol, angresids):
+    ##forzen the CH2 and CH3 groups in ACE, NME and GLY
+    for i in angresids:
+      if mol.residues[i].resname == 'ACE':
+        for j in mol.residues[i].resconter:
+          atname = mol.atoms[j].atname
+          if (atname in ['C', 'O']):
+            iddict[j] = (iddict[j][0], iddict[j][1], -99)
+      elif mol.residues[i].resname == 'NME':
+        for j in mol.residues[i].resconter:
+          atname = mol.atoms[j].atname
+          if (atname in ['N', 'H']):
+            iddict[j] = (iddict[j][0], iddict[j][1], -99)
+      elif mol.residues[i].resname == 'GLY':
+        for j in mol.residues[i].resconter:
+          atname = mol.atoms[j].atname
+          if (atname in ['N', 'H', 'C', 'O']):
+            iddict[j] = (iddict[j][0], iddict[j][1], -99)
+
+def get_equal_atoms(mol, resid, blist, iddict):
+
+    #for each residue to get the bonds inside the residue
+    blistinres = []
+    atinres = mol.residues[resid].resconter
+
+    for bondinfo in blist:
+      at1 = bondinfo[0]
+      at2 = bondinfo[1]
+      bondinfo = [at1, at2]
+      if set(atinres).intersection(set(bondinfo)) == set(bondinfo):
+        blistinres.append(bondinfo)
+
+    #for the bonds inside a residue, to see whether there are two atoms
+    #connect to the same atoms
+    for j in range(0, len(blistinres)):
+      blistj = blistinres[j]
+      for k in range(j+1, len(blistinres)):
+        blistk = blistinres[k]
+
+        if list(set(blistj).intersection(set(blistk))) != []:
+        #if there are atoms connect to the same atom, get the two atoms
+          unionjk = set(blistj) | set(blistk)
+          intersecjk = set(blistj) & set(blistk)
+          diffset = sorted(list(unionjk - intersecjk))
+
+          at1 = diffset[0]
+          at2 = diffset[1]
+          atc = list(intersecjk)[0]
+
+          if (iddict[at1][1] == 1) and (iddict[at2][1] == 1) and (iddict[atc][1] == 6):
+          #if it is a CH2 group or CH3 group
+            if (len(iddict[at2]) == 2):
+            #if there is no restriction index exist for atom 2
+              iddict[at2] = (iddict[at2][0], iddict[at2][1], iddict[at1][0])
+              #if there is no restriction index exist for atom 1
+              if len(iddict[at1]) == 2:
+                iddict[at1] = (iddict[at1][0], iddict[at2][1], 0)
+              if len(iddict[atc]) == 2:
+                iddict[atc] = (iddict[atc][0], iddict[atc][1], 0)
+
+def add_restriction(frespin, libdict, mol, resids, reslist, mcresids, boresids,
+                    angresids, iddict, chgmod, fixchg_resids):
+
+    fresp = open(frespin, 'a')
+
+    #3. print the 3rd part, the group restriction------------------------------
+    for i in angresids:
+      resname = mol.residues[i].resname
+      print >> fresp, "%5d" %len(mol.residues[i].resconter),
+      print >> fresp, "%9s" %"0.00000"
+      print >> fresp, "",
+      for j in mol.residues[i].resconter:
+        print >> fresp, "%4d%5d" %(1, iddict[j][0]),
+      print >> fresp, "\n",
+
+    #4. add the 4th part, the backbone restriction-----------------------------
+    if chgmod == 0:
+      pass
+    elif (chgmod in [1, 2, 3]):
+      for i in resids:
+        resname = mol.residues[i].resname
+        if (i not in boresids) and (i in mcresids) and \
+           (i in reslist.std):
+          for j in range(0, len(mol.residues[i].resconter)):
+            #get new atom id
+            atj = mol.residues[i].resconter[j]
+            natj = iddict[atj][0]
+            #get charge of the atom
+            atnamej = resname + '-' + mol.atoms[atj].atname
+            chg = libdict[atnamej][1]
+            #get the atom name
+            atnamejs = mol.atoms[atj].atname
+            if chgmod == 1:
+              if atnamejs in ['CA', 'N', 'C', 'O']:
+                print >> fresp, "%5d%10.5f" %(1, chg)
+                print >> fresp, "%5d%5d" %(1, natj)
+            elif chgmod == 2:
+              if atnamejs in ['CA', 'H', 'HA', 'N', 'C', 'O']:
+                print >> fresp, "%5d%10.5f" %(1, chg)
+                print >> fresp, "%5d%5d" %(1, natj)
+            elif chgmod == 3:
+              if atnamejs in ['CA', 'H', 'HA', 'N', 'C', 'O', 'CB']:
+                print >> fresp, "%5d%10.5f" %(1, chg)
+                print >> fresp, "%5d%5d" %(1, natj)
+    else:
+      raise pymsmtError('Please choose chgmod among 0, 1, 2 and 3.')
+
+    #5. add the 5th part, the restriction of specify residues------------------
+    for i in fixchg_resids:
+      resname = mol.residues[i].resname
+      for j in mol.residues[i].resconter:
+        atname = mol.atoms[j].atname
+        if i in reslist.nterm:
+          chgj = libdict['N'+resname + '-' + atname][1]
+        elif i in reslist.cterm:
+          chgj = libdict['C'+resname + '-' + atname][1]
+        else:
+          chgj = libdict[resname + '-' + atname][1]
+        print >> fresp, "%5d%10.5f" %(int(1), chgj)
+        print >> fresp, "%5d%5d" %(int(1), iddict[j][0])
+
+    print >> fresp, "\n"
+    print >> fresp, "\n"
+    fresp.close()
+
 def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
-                         chgmod, ionchgr):
+                         chgmod, fixchg_resids):
 
     libdict, chargedict = get_lib_dict(ffchoice)
 
@@ -83,6 +276,55 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
       libdict1, chargedict1 = get_lib_dict(mol2f)
       libdict.update(libdict1)
       chargedict.update(chargedict1)
+
+    mol, atids, resids = get_atominfo_fpdb(lgpdbf)
+
+    reslist = get_reslist(mol, resids)
+
+    blist = get_mc_blist(mol, atids, ionids, stfpf)
+
+    boatids = [] #Binding Backbone, C-terminal Oxygen Atom IDs
+
+    mcresids = [] #Metal site residues
+    stfpff = open(stfpf, 'r')
+    for line in stfpff:
+      if line[0:4] != 'LINK':
+        line = line.split()
+        line = line[0].split('-')
+        mcresids.append(int(line[0]))
+      else:
+        line = line.strip('\n')
+        line = line.split()
+        if (line[-1][-1] in ['O', 'OXT']):
+          atid, atom = line[-1].split('-')
+          boatids.append(int(atid))
+    stfpff.close()
+
+    boresids = [] #Binding Backbone, C-terminal Oxygen Atom Residue IDs
+    for i in boatids:
+      resid = mol.atoms[i].resid
+      if resid not in boresids:
+        boresids.append(resid)
+
+    angresids = [] #ACE, NME, GLY residues
+    for i in resids:
+      if i not in mcresids:
+        angresids.append(i)
+
+    #Get the total charge of the system-------------------------------------
+    totchg = 0.0
+
+    for i in resids:
+      resname = mol.residues[i].resname
+      if i in reslist.nterm:
+        reschg = chargedict['N' + resname]
+      elif i in reslist.cterm:
+        reschg = chargedict['C' + resname]
+      else:
+        reschg = chargedict[resname]
+      totchg = totchg + reschg
+
+    totchg = int(round(totchg, 0))
 
     #-------------------------------------------------------------------------
     ##############RESP1.IN file###############################################
@@ -103,56 +345,13 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
     print >> fresp1, " &end"
     print >> fresp1, "    1.0"
     print >> fresp1, "Resp charges for organic molecule"
-
-    mol, atids, resids = get_atominfo_fpdb(lgpdbf)
-
-    blist = get_mc_blist(mol, atids, ionids, stfpf)
-
-    boatids = [] #Binding Backbone Oxygen Atom IDs
-
-    mcresids = [] #Metal site residues
-    stfpff = open(stfpf, 'r')
-    for line in stfpff:
-      if line[0:4] != 'LINK':
-        line = line.split()
-        line = line[0].split('-')
-        mcresids.append(int(line[0]))
-      else:
-        line = line.strip('\n')
-        line = line.split()
-        if (line[-1][-1] in ['O', 'OXT']):
-          atid, atom = line[-1].split('-')
-          boatids.append(int(atid))
-    stfpff.close()
-
-    boresids = [] #Binding Backbone Oxygen Atom Residue IDs
-    for i in boatids:
-      resid = mol.atoms[i].resid
-      if resid not in boresids:
-        boresids.append(resid)
-
-    angresids = [] #ACE, NME, GLY residues
-    for i in resids:
-      if i not in mcresids:
-        angresids.append(i)
-
-    #1. Get the total charge of the system-------------------------------------
-    totchg = 0.0
-
-    for i in resids:
-      resname = mol.residues[i].resname
-      reschg = chargedict[resname]
-      totchg = totchg + reschg
-
-    print >> fresp1, "%5d" %int(totchg),
+    print >> fresp1, "%5d" %totchg,
     print >> fresp1, "%4d" %len(atids)
 
     #2. print the 2nd part, the free and fozen atoms---------------------------
+    natids = [i for i in range(1, len(atids)+1)] #new atids
 
-    #new atids
-    natids = [i for i in range(1, len(atids)+1)] 
-
-    iddict = {} #First number is iddict
+    iddict = {} #First number in iddict is new atom id, second is atomic number
 
     for i in range(0, len(atids)):
       iddict[atids[i]] = natids[i]
@@ -162,177 +361,25 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
       elenum = Atnum[element]
       iddict[i] = (iddict[i], elenum)
 
-    #for ACE, NME and GLY residues
-    acedict = {}
-    nmedict = {}
-    glydict = {}
-    ace1st = 0
-    nme1st = 0
-    gly1st = 0
-
     for i in resids:
-      if (i in angresids) and (mol.residues[i].resname == 'ACE'):
-        if ace1st < 1:
-        #get the ids in the first ACE group
-          for j in mol.residues[i].resconter:
-            atname = mol.atoms[j].atname
-            if (atname in ['HH31', 'CH3', 'C', 'O']):
-              iddict[j] = (iddict[j][0], iddict[j][1], 0)
-              acedict[atname] = iddict[j][0]
-            elif (atname in ['HH32', 'HH33']):
-              iddict[j] = (iddict[j][0], iddict[j][1], acedict['HH31'])
-        else:
-          for j in mol.residues[i].resconter:
-            atname = mol.atoms[j].atname
-            if (atname in ['HH31', 'CH3', 'C', 'O']):
-              iddict[j] = (iddict[j][0], iddict[j][1], acedict[atname])
-            elif (atname in ['HH32', 'HH33']):
-              iddict[j] = (iddict[j][0], iddict[j][1], acedict['HH31'])
-        ace1st = ace1st + 1
-      elif (i in angresids) and (mol.residues[i].resname == 'NME'):
-        if nme1st < 1:
-        #get the ids in the first ACE group
-          for j in mol.residues[i].resconter:
-            atname = mol.atoms[j].atname
-            if (atname in ['N', 'CH3', 'HH31', 'H']):
-              iddict[j] = (iddict[j][0], iddict[j][1], 0)
-              nmedict[atname] = iddict[j][0]
-            elif (atname in ['HH32', 'HH33']):
-              iddict[j] = (iddict[j][0], iddict[j][1], nmedict['HH31'])
-        else:
-          for j in mol.residues[i].resconter:
-            atname = mol.atoms[j].atname
-            if (atname in ['N', 'CH3', 'HH31', 'H']):
-              iddict[j] = (iddict[j][0], iddict[j][1], nmedict[atname])
-            elif (atname in ['HH32', 'HH33']):
-              iddict[j] = (iddict[j][0], iddict[j][1], nmedict['HH31'])
-        nme1st = nme1st + 1
-      #for GLY residues
-      elif (i in angresids) and (mol.residues[i].resname == 'GLY'):
-        if gly1st < 1:
-        #get the ids of the first GLY group
-          for j in mol.residues[i].resconter:
-            atname = mol.atoms[j].atname
-            if (atname in ['N', 'H', 'C', 'O', 'CA', 'HA2']):
-              iddict[j] = (iddict[j][0], iddict[j][1], 0)
-              glydict[atname] = iddict[j][0]
-            elif (atname in ['HA3']):
-              iddict[j] = (iddict[j][0], iddict[j][1], glydict['HA2'])
-        else:
-          for j in mol.residues[i].resconter:
-            atname = mol.atoms[j].atname
-            if (atname in ['N', 'H', 'C', 'O', 'CA', 'HA2']):
-              iddict[j] = (iddict[j][0], iddict[j][1], glydict[atname])
-            elif (atname in ['HA3']):
-              iddict[j] = (iddict[j][0], iddict[j][1], glydict['HA2'])
-        gly1st = gly1st + 1
-      #for other residues to get the hydrogen equal information 
-      else:
-        #for each residue to get the bonds inside the residue
-        blistinres = []
-        atinres = mol.residues[i].resconter
-        for bondinfo in blist:
-          at1 = bondinfo[0]
-          at2 = bondinfo[1]
-          bondinfo = [at1, at2]
-          if set(atinres).intersection(set(bondinfo)) == set(bondinfo):
-            blistinres.append(bondinfo)
+      get_equal_atoms(mol, i, blist, iddict)
 
-        #for the bonds inside a residue, to see whether there are two atoms
-        #connect to the same atoms
-        for j in range(0, len(blistinres)):
-          blistj = blistinres[j]
-          for k in range(j+1, len(blistinres)):
-            blistk = blistinres[k]
- 
-            if list(set(blistj).intersection(set(blistk))) != []:
-            #if there are atoms connect to the same atom, get the two atoms
-              unionjk = set(blistj) | set(blistk)
-              intersecjk = set(blistj) & set(blistk)
-              diffset = sorted(list(unionjk - intersecjk))
- 
-              at1 = diffset[0]
-              at2 = diffset[1]
-              atc = list(intersecjk)[0]
- 
-              if (iddict[at1][1] == 1) and (iddict[at2][1] == 1) and (iddict[atc][1] == 6): 
-              #if it is a CH2 group or CH3 group
-                if (len(iddict[at2]) == 2):
-                #if there is no restriction index exist for atom 2
-                  iddict[at2] = (iddict[at2][0], iddict[at2][1], iddict[at1][0])
-                  #if there is no restriction index exist for atom 1
-                  if len(iddict[at1]) == 2:
-                    iddict[at1] = (iddict[at1][0], iddict[at2][1], 0)
-                  if len(iddict[atc]) == 2:
-                    iddict[atc] = (iddict[atc][0], iddict[atc][1], 0)
-
-    #other atoms are frozen
+    #other atoms (except the CH2 and CH3 groups) are frozen
     for i in atids:
       if (len(iddict[i]) == 2):
         iddict[i] = (iddict[i][0], iddict[i][1], -99)
 
     for i in atids:
-      if iddict[i][2] == -99:
-        print >> fresp1, "%5d" %iddict[i][1],
-        print >> fresp1, "%4s" %'0'
-      else:
-        print >> fresp1, "%5d" %iddict[i][1],
-        print >> fresp1, "%4s" %iddict[i][2]
-
-    #3. print the 3rd part, the atoms related to ACE, GLY, NME-----------------
-    for i in angresids:
-      resname = mol.residues[i].resname
-      print >> fresp1, "%5d" %len(mol.residues[i].resconter),
-      print >> fresp1, "%9s" %"0.00000"
-      print >> fresp1, "",
-      for j in mol.residues[i].resconter:
-        print >> fresp1, "%4d%5d" %(1, iddict[j][0]),
-      print >> fresp1, "\n",
-
-    #4. add the 4th part, backbone restriction---------------------------------
-    if chgmod == 0:
-      pass
-    elif (chgmod in [1, 2, 3]):
-      for i in resids:
-        resname = mol.residues[i].resname
-        if (i not in boresids) and (resname in resnamel) and \
-           (i in mcresids):
-          for j in range(0, len(mol.residues[i].resconter)):
-            #get new atom id
-            atj = mol.residues[i].resconter[j]
-            natj = iddict[atj][0]
-            #get its charge
-            atnamej = resname + '-' + mol.atoms[atj].atname
-            chg = libdict[atnamej][1]
-            #atom name
-            atnamejs = mol.atoms[atj].atname
-            #print the charge of restrict atom
-            if chgmod == 1:
-              if (atnamejs in ['CA', 'N', 'C', 'O']):
-                print >> fresp1, "%5d%10.5f" %(1, chg)
-                print >> fresp1, "%5d%5d" %(1, natj)
-            elif chgmod == 2:
-              if (atnamejs in ['CA', 'H', 'HA', 'N', 'C', 'O', 'HN']):
-                print >> fresp1, "%5d%10.5f" %(1, chg)
-                print >> fresp1, "%5d%5d" %(1, natj)
-            elif chgmod == 3:
-              if (atnamejs in ['CA', 'H', 'HA', 'N', 'C', 'O', 'HN', 'CB']):
-                print >> fresp1, "%5d%10.5f" %(1, chg)
-                print >> fresp1, "%5d%5d" %(1, natj)
-    else:
-      raise pymsmtError('Please choose chgmod among 0, 1, 2 and 3.')
-
-    #5. add the 5th part, the restriction of the metal ion---------------------
-    if (ionchgr == 1):
-      for i in ionids:
-        resname = mol.atoms[i].resname
-        ionchg = chargedict[resname]
-        print >> fresp1, "%5d%10.5f" %(int(1), ionchg)
-        print >> fresp1, "%5d%5d" %(int(1), iddict[i][0])
-
-    print >> fresp1, "\n"
-    print >> fresp1, "\n"
+      #if iddict[i][2] == -99:
+      print >> fresp1, "%5d" %iddict[i][1],
+      print >> fresp1, "%4s" %'0'
+      #else:
+      #  print >> fresp1, "%5d" %iddict[i][1],
+      #  print >> fresp1, "%4s" %iddict[i][2]
     fresp1.close()
+
+    add_restriction('resp1.in', libdict, mol, resids, reslist, mcresids,
+                    boresids, angresids, iddict, chgmod, fixchg_resids)
 
     #-------------------------------------------------------------------------
     ####################RESP2.IN file#########################################
@@ -354,88 +401,20 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
     print >> fresp2, " &end"
     print >> fresp2, "    1.0"
     print >> fresp2, "Resp charges for organic molecule"
-    print >> fresp2, "%5d" %int(totchg),
+    print >> fresp2, "%5d" %totchg,
     print >> fresp2, "%4d" %len(atids)
-
-    ##forzen the group which is CH2 or CH3 group
-    for i in angresids:
-      if mol.residues[i].resname == 'ACE':
-        for j in mol.residues[i].resconter:
-          atname = mol.atoms[j].atname
-          if (atname in ['C', 'O']):
-            iddict[j] = (iddict[j][0], iddict[j][1], -99)
-      elif mol.residues[i].resname == 'NME':
-        for j in mol.residues[i].resconter:
-          atname = mol.atoms[j].atname
-          if (atname in ['N', 'H']):
-            iddict[j] = (iddict[j][0], iddict[j][1], -99)
-      elif mol.residues[i].resname == 'GLY':
-        for j in mol.residues[i].resconter:
-          atname = mol.atoms[j].atname
-          if (atname in ['N', 'H', 'C', 'O']):
-            iddict[j] = (iddict[j][0], iddict[j][1], -99)
 
     #2. print the 2nd part, the free or frozen information---------------------
     for i in atids:
       print >> fresp2, "%5d" %iddict[i][1],
       print >> fresp2, "%4s" %iddict[i][2]
-
-    #3. print the 3rd part, the group restriction------------------------------
-    for i in angresids:
-      resname = mol.residues[i].resname
-      print >> fresp2, "%5d" %len(mol.residues[i].resconter),
-      print >> fresp2, "%9s" %"0.00000"
-      print >> fresp2, "",
-      for j in mol.residues[i].resconter:
-        print >> fresp2, "%4d%5d" %(1, iddict[j][0]),
-      print >> fresp2, "\n",
-
-    #4. add the 4th part, the backbone restriction-----------------------------
-    if chgmod == 0:
-      pass
-    elif (chgmod in [1, 2, 3]):
-      for i in resids:
-        resname = mol.residues[i].resname
-        if (i not in boresids) and (resname in resnamel) and \
-           (i in mcresids):
-          for j in range(0, len(mol.residues[i].resconter)):
-            #get new atom id
-            atj = mol.residues[i].resconter[j]
-            natj = iddict[atj][0]
-            #get charge of the atom
-            atnamej = resname + '-' + mol.atoms[atj].atname
-            chg = libdict[atnamej][1]
-            #get the atom name
-            atnamejs = mol.atoms[atj].atname
-            if chgmod == 1:
-              if atnamejs in ['CA', 'N', 'C', 'O']:
-                print >> fresp2, "%5d%10.5f" %(1, chg)
-                print >> fresp2, "%5d%5d" %(1, natj)
-            elif chgmod == 2:
-              if atnamejs in ['CA', 'H', 'HA', 'N', 'C', 'O', 'HN']:
-                print >> fresp2, "%5d%10.5f" %(1, chg)
-                print >> fresp2, "%5d%5d" %(1, natj)
-            elif chgmod == 3:
-              if atnamejs in ['CA', 'H', 'HA', 'N', 'C', 'O', 'HN', 'CB']:
-                print >> fresp2, "%5d%10.5f" %(1, chg)
-                print >> fresp2, "%5d%5d" %(1, natj)
-    else:
-      raise pymsmtError('Please choose chgmod among 0, 1, 2 and 3.')
-
-    #5. add the 5th part, the restriction of metal ion-------------------------
-    if (ionchgr == 1):
-      for i in ionids:
-        resname = mol.atoms[i].resname
-        ionchg = chargedict[resname]
-        print >> fresp2, "%5d%10.5f" %(int(1), ionchg)
-        print >> fresp2, "%5d%5d" %(int(1), iddict[i][0])
-
-    print >> fresp2, "\n"
-    print >> fresp2, "\n"
     fresp2.close()
 
+    add_restriction('resp2.in', libdict, mol, resids, reslist, mcresids,
+                    boresids, angresids, iddict, chgmod, fixchg_resids)
+
 def resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids,\
-                 ffchoice, mol2fs, metcenres2, chgmod, ionchgr, g0x):
+                 ffchoice, mol2fs, metcenres2, chgmod, fixchg_resids, g0x):
 
     print "******************************************************************"
     print "*                                                                *"
@@ -444,7 +423,7 @@ def resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids,\
     print "******************************************************************"
 
     gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
-                         chgmod, ionchgr)
+                         chgmod, fixchg_resids)
 
     #-------------------------------------------------------------------------
     ####################RESP charge fitting###################################
@@ -453,10 +432,6 @@ def resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids,\
     print '***Doing the RESP charge fiting...'
 
     espf = mklogf.strip('.log') + '.esp'
-
-    #try:
-    #  os.system("espgen -i %s -o %s" %(mklogf, espf))
-    #except:
 
     if g0x in ['g03', 'g09']:
       get_esp_from_gau(mklogf, espf)
@@ -580,12 +555,12 @@ def resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids,\
       resname1 =  mol.residues[resids[i]].resname #load residue name
       resname2 = metcenres2[i] #new residue name
 
-      #Backbone atoms are use the AMBER backbone atom type
-      if resname1 in resnamel:
-        for bbatm in ['N', 'H', 'CA', 'HA','C', 'O']:
-          key1 = str(resids[i]) + '-' + resname1 + '-' + bbatm
-          key2 = resname1 + '-' + bbatm
-          sddict[key1] = libdict[key2][0]
+      #Backbone atoms use AMBER backbone atom types
+      #if resname1 in resnamel:
+      #  for bbatm in ['N', 'H', 'CA', 'HA','C', 'O']:
+      #    key1 = str(resids[i]) + '-' + resname1 + '-' + bbatm
+      #    key2 = resname1 + '-' + bbatm
+      #    sddict[key1] = libdict[key2][0]
 
       #New id dict
       iddict1 = {}

@@ -14,7 +14,7 @@ def write_sqm_optf(siopf, totchg, gatms):
     print >> sqm_scf, "Run semi-empirical minimization"
     print >> sqm_scf, " &qmmm"
     print >> sqm_scf, " qm_theory='PM6', grms_tol=0.0002,"
-    print >> sqm_scf, " tight_p_conv=1, scfconv=1.d-10, qmcharge=%d," %int(totchg)
+    print >> sqm_scf, " tight_p_conv=1, scfconv=1.d-10, qmcharge=%d," %totchg
     print >> sqm_scf, " /"
     for gatmi in gatms:
         nuchg = int(AtomicNum[gatmi.element])

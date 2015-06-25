@@ -10,6 +10,26 @@ from chemistry.periodic_table import AtomicNum
 #------------------------Write Gaussian input file-----------------------------
 #------------------------------------------------------------------------------
 
+def write_gauatm(gauatm, fname, signum=3):
+    wf = open(fname, 'a')
+    if signum == 3:
+      print >> wf, "%-6s   %8.3f %8.3f %8.3f" %(gauatm.element, \
+                   gauatm.crdx, gauatm.crdy, gauatm.crdz)
+    elif signum == 4:
+      print >> wf, "%-6s   %9.4f %9.4f %9.4f" %(gauatm.element, \
+                   gauatm.crdx, gauatm.crdy, gauatm.crdz)
+    wf.close()
+
+def write_gauatm_opth(gauatm, fname, signum=3):
+    wf = open(fname, 'a')
+    if gauatm.element == "H":
+      print >> wf, "%-6s  0 %8.3f %8.3f %8.3f" %(gauatm.element, \
+          gauatm.crdx, gauatm.crdy, gauatm.crdz)
+    else:
+      print >> wf, "%-6s -1 %8.3f %8.3f %8.3f" %(gauatm.element, \
+          gauatm.crdx, gauatm.crdy, gauatm.crdz)
+    wf.close()
+
 def write_sdd_basis(gatms, gauf):
 
     atnames = [i.element for i in gatms]
@@ -55,7 +75,7 @@ def write_gau_optf(outf, goptf, totchg, SpinNum, gatms, signum=3):
     print >> optf, " "
     print >> optf, "CLR"
     print >> optf, " "
-    print >> optf, "%d  %d" %(int(round(totchg, 0)), SpinNum)
+    print >> optf, "%d  %d" %(totchg, SpinNum)
     optf.close()
 
     if signum == 3:
@@ -85,7 +105,8 @@ def write_gau_fcf(outf, gfcf):
     print >> fcf, " "
     fcf.close()
 
-def write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict, IonLJParaDict, signum=3):
+def write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict,
+                  IonLJParaDict, largeopt, signum=3):
 
     ##MK RESP input file
     mkf = open(gmkf, 'w')
@@ -93,26 +114,41 @@ def write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict, IonL
     print >> mkf, "%%Chk=%s_large_mk.chk" %outf
     print >> mkf, "%Mem=3000MB"
     print >> mkf, "%NProcShared=2"
-    print >> mkf, "#N B3LYP/6-31G* Integral=(Grid=UltraFine) Opt " + \
-                  "Pop(MK,ReadRadii) SCF=XQC"
+
+    if largeopt == 0:
+      print >> mkf, "#N B3LYP/6-31G* Integral=(Grid=UltraFine) " + \
+                    "Pop(MK,ReadRadii) SCF=XQC"
+    elif largeopt in [1, 2]:
+      print >> mkf, "#N B3LYP/6-31G* Integral=(Grid=UltraFine) Opt " + \
+                    "Pop(MK,ReadRadii) SCF=XQC"
+
     print >> mkf, "IOp(6/33=2)"
     print >> mkf, " "
     print >> mkf, "CLR"
     print >> mkf, " "
-    print >> mkf, "%d  %d" %(int(round(totchg, 0)),SpinNum)
+    print >> mkf, "%d  %d" %(totchg, SpinNum)
     mkf.close()
 
     #For Gaussian file
     if signum == 3:
-      for gatmi in gatms:
-        write_gauatm_opth(gatmi, gmkf)
+      if largeopt in [0, 2]:
+        for gatmi in gatms:
+          write_gauatm(gatmi, gmkf)
+      elif largeopt == 1:
+        for gatmi in gatms:
+          write_gauatm_opth(gatmi, gmkf)
     elif signum == 4:
-      for gatmi in gatms:
-        write_gauatm(gatmi, gmkf, signum)
+      if largeopt in [0, 2]:
+        for gatmi in gatms:
+          write_gauatm(gatmi, gmkf, signum)
+      elif largeopt == 1:
+        for gatmi in gatms:
+          write_gauatm_opth(gatmi, gmkf, signum)
 
     ##print the ion radius for resp charge fitting in MK RESP input file
     mkf = open(gmkf, 'a')
     print >> mkf, " "
+
     for i in ionnames:
       chg = str(int(chargedict[i]))
       if len(i) > 1:
@@ -120,35 +156,21 @@ def write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict, IonL
       vdwradius = IonLJParaDict[i + chg][0]
       print >> mkf, i, vdwradius
     print >> mkf, " "
-    for i in ionnames:
-      chg = str(int(chargedict[i]))
-      if len(i) > 1:
-        i = i[0] + i[1:].lower()
-      vdwradius = IonLJParaDict[i + chg][0]
-      print >> mkf, i, vdwradius
-    print >> mkf, " "
-    print >> mkf, " "
+
+    if largeopt in [1, 2]:
+      for i in ionnames:
+        chg = str(int(chargedict[i]))
+        if len(i) > 1:
+          i = i[0] + i[1:].lower()
+        vdwradius = IonLJParaDict[i + chg][0]
+        print >> mkf, i, vdwradius
+      print >> mkf, " "
+      print >> mkf, " "
+
+    if largeopt == 0:
+      print >> mkf, " "
+
     mkf.close()
-
-def write_gauatm(gauatm, fname, signum=3):
-    wf = open(fname, 'a')
-    if signum == 3:
-      print >> wf, "%-6s   %8.3f %8.3f %8.3f" %(gauatm.element, \
-                   gauatm.crdx, gauatm.crdy, gauatm.crdz)
-    elif signum == 4:
-      print >> wf, "%-6s   %9.4f %9.4f %9.4f" %(gauatm.element, \
-                   gauatm.crdx, gauatm.crdy, gauatm.crdz)
-    wf.close()
-
-def write_gauatm_opth(gauatm, fname, signum=3):
-    wf = open(fname, 'a')
-    if gauatm.element == "H":
-      print >> wf, "%-6s  0 %8.3f %8.3f %8.3f" %(gauatm.element, \
-          gauatm.crdx, gauatm.crdy, gauatm.crdz)
-    else:
-      print >> wf, "%-6s -1 %8.3f %8.3f %8.3f" %(gauatm.element, \
-          gauatm.crdx, gauatm.crdy, gauatm.crdz)
-    wf.close()
 
 #------------------------------------------------------------------------------
 #-----------------------Read info from Gaussian output file--------------------
