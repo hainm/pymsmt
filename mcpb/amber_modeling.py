@@ -157,7 +157,7 @@ def gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids,\
     writepdb(mol, atids, fipdbf)
     #----------------------------get the atom names which changed atom type
     if model in [1, 2]:
-      atomdefs = []
+      atomdefs = {}
       fp0 = open(stfpf, 'r')
       for line in fp0:
         if line[0:4] != "LINK":
@@ -166,7 +166,13 @@ def gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids,\
           if line[2] != line[4]:
             atnewtype = line[4]
             element = mol.atoms[int(line[1])].element
-            atomdefs.append((atnewtype, element))
+            if atnewtype not in atomdefs.keys():
+              atomdefs[atnewtype] = element
+            else:
+              if element != atomdefs[atomnewtype]:
+                raise pymsmtError('There are atoms in fingerprint file '
+                                  'of standard model with same atom type '
+                                  'but different element.')
       fp0.close()
     #---------------------Get the bond information, mol2 is the standard model
 
@@ -221,10 +227,10 @@ def gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids,\
     print >> lp, 'source leaprc.gaff'
     #Add atom types, for bonded model
     if model in [1, 2]:
-      if atomdefs != []:
+      if atomdefs.keys() != []:
         print >> lp, 'addAtomTypes {'
-        for i in atomdefs:
-          print >> lp, '        { "%s"  "%s" "sp3" }' %(i[0], i[1])
+        for i in atomdefs.keys():
+          print >> lp, '        { "%s"  "%s" "sp3" }' %(i, atomdefs[i])
         print >> lp, '}'
 
     #load lib and frcmod files for monovalent ions (for salt)

@@ -92,6 +92,8 @@ sqmopt = 0
 largeopt = 0
 watermodel = 'tip3p'
 paraset = 'cm'
+scchg = -99
+lgchg = -99
 
 if options.step not in ['1', '1n', '1m', '1a', '2', '2e', '2s', '2z',
                         '3', '3a', '3b', '3c', '3d', '4', '4b', '4n1',
@@ -196,6 +198,34 @@ for line in inputf:
             warnings.warn('No chgfix_resids parameter provided. '
                           'Default value %d will be used.'
                           %chgfix_resids, pymsmtWarning)
+    #scchg
+    elif line[0].lower() == 'scmodel_chg':
+        if len(line) == 2:
+            try:
+                scchg = int(line[1])
+            except:
+                raise pymsmtError('Please provide an int number for the '
+                                  'scmodel_chg parameter.')
+        elif len(line) == 1:
+            warnings.warn('No scmodel_chg parameter provided, program '
+                          'will assign a charge automatically.', pymsmtWarning)
+        else:
+            raise pymsmtError('More than one scmodel_chg values are provided, '
+                              'need one.')
+    #lgchg
+    elif line[0].lower() == 'lgmodel_chg':
+        if len(line) == 2:
+            try:
+                lgchg = int(line[1])
+            except:
+                raise pymsmtError('Please provide an int number for the '
+                                  'lgmodel_chg parameter.')
+        elif len(line) == 1:
+            warnings.warn('No lgmodel_chg parameter provided, program '
+                          'will assign a charge automatically.', pymsmtWarning)
+        else:
+            raise pymsmtError('More than one lgmodel_chg values are provided, '
+                              'need one.')
     #naamol2fs
     elif line[0].lower() == 'naa_mol2files':
         if len(line) >= 2:
@@ -364,6 +394,10 @@ except:
 print 'The variable group_name is : ', gname
 print 'The variable cut_off is : ', cutoff
 print 'The variable chgfix_resids is : ', chgfix_resids
+print 'The variable scmodel_chg is : ', scchg
+print '             -99 means program will assign a charge automatically.'
+print 'The variable lgmodel_chg is : ', lgchg
+print '             -99 means program will assign a charge automatically.'
 print 'The variable software_version is : ', g0x
 print 'The variable sqm_opt is : ', sqmopt
 print 'The variable large_opt is : ', largeopt
@@ -441,16 +475,16 @@ ileapf = gname + '_tleap.in'
 #    complex.
 if (options.step == '1'):
     gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
-                     watermodel, 2, largeopt, sqmopt)
+                     watermodel, 2, largeopt, sqmopt, scchg, lgchg)
 elif (options.step == '1n'):
     gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
-                     watermodel, 0, largeopt, sqmopt)
+                     watermodel, 0, largeopt, sqmopt, scchg, lgchg)
 elif (options.step == '1m'):
     gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
-                     watermodel, 1, largeopt, sqmopt)
+                     watermodel, 1, largeopt, sqmopt, scchg, lgchg)
 elif (options.step == '1a'):
     gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
-                     watermodel, 2, largeopt, sqmopt)
+                     watermodel, 2, largeopt, sqmopt, scchg, lgchg)
 #==============================================================================
 # Step 2 Frcmod file generation
 #==============================================================================
@@ -492,19 +526,19 @@ elif (options.step == '2z'):
 #    according to force field chosen
 elif (options.step == '3'): #Default
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 1, chgfix_resids, g0x)
+                 premol2fs, mcresname, 1, chgfix_resids, g0x, lgchg)
 elif (options.step == '3a'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 0, chgfix_resids, g0x)
+                 premol2fs, mcresname, 0, chgfix_resids, g0x, lgchg)
 elif (options.step == '3b'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 1, chgfix_resids, g0x)
+                 premol2fs, mcresname, 1, chgfix_resids, g0x, lgchg)
 elif (options.step == '3c'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 2, chgfix_resids, g0x)
+                 premol2fs, mcresname, 2, chgfix_resids, g0x, lgchg)
 elif (options.step == '3d'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 3, chgfix_resids, g0x)
+                 premol2fs, mcresname, 3, chgfix_resids, g0x, lgchg)
 #==============================================================================
 # Step 4 Prepare the modeling file for leap
 #==============================================================================

@@ -690,14 +690,43 @@ def write_gly(mol, i, gatms, pdbf, fpf=None):
  
       for j in mol.residues[i].resconter:
         atname = mol.atoms[j].atname
-        if (atname in ['N', 'H', 'HN', 'CA', 'HA', 'CB', 'C', 'O','HA2', 'HA3']):
+        if (atname in ['N', 'NH', 'H', 'HN', 'CA', 'HA', 'CB', 'C', 'O','HA2', 'HA3', 'H1', 'H2', 'H3', 'HN1', 'HN2', 'HN3']):
           if atname in ['N', 'H', 'CA', 'C', 'O', 'HA2', 'HA3']:
             crdx = mol.atoms[j].crd[0]
             crdy = mol.atoms[j].crd[1]
             crdz = mol.atoms[j].crd[2]
             element = mol.atoms[j].element
+          elif (atname == 'NH'):
+            atname = 'N'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'N'
           elif (atname == 'HN'):
             atname = 'H'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'H'
+          elif (atname == 'HN1'):
+            atname = 'H1'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'H'
+          elif (atname == 'HN2'):
+            atname = 'H2'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'H'
+          elif (atname == 'HN3'):
+            atname = 'H3'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'H'
+          elif (atname in ['H1', 'H2', 'H3']):
             crdx = mol.atoms[j].crd[0]
             crdy = mol.atoms[j].crd[1]
             crdz = mol.atoms[j].crd[2]
@@ -709,7 +738,7 @@ def write_gly(mol, i, gatms, pdbf, fpf=None):
             crdy = cacrd[1] + bdld['CH'] * (mol.atoms[j].crd[1] - cacrd[1])/bvec
             crdz = cacrd[2] + bdld['CH'] * (mol.atoms[j].crd[2] - cacrd[2])/bvec
             element = 'H'
- 
+
           crdx = round(crdx, 3)
           crdy = round(crdy, 3)
           crdz = round(crdz, 3)
@@ -760,7 +789,7 @@ def write_gly(mol, i, gatms, pdbf, fpf=None):
  
       for j in mol.residues[i].resconter:
         atname = mol.atoms[j].atname
-        if (atname in ['N', 'CD', 'CA', 'HA', 'CB', 'C', 'O']):
+        if (atname in ['N', 'HN', 'CD', 'CA', 'HA', 'CB', 'C', 'O', 'H2', 'H3', 'HN2', 'HN3']):
           if atname in ['N', 'CA', 'C', 'O']:
             crdx = mol.atoms[j].crd[0]
             crdy = mol.atoms[j].crd[1]
@@ -772,6 +801,29 @@ def write_gly(mol, i, gatms, pdbf, fpf=None):
             crdx = cacrd[0] + bdld['CH'] * (mol.atoms[j].crd[0] - cacrd[0])/bvec
             crdy = cacrd[1] + bdld['CH'] * (mol.atoms[j].crd[1] - cacrd[1])/bvec
             crdz = cacrd[2] + bdld['CH'] * (mol.atoms[j].crd[2] - cacrd[2])/bvec
+            element = 'H'
+          elif (atname == 'NH'):
+            atname = 'N'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'N'
+          elif (atname == 'HN2'):
+            atname = 'H2'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'H'
+          elif (atname == 'HN3'):
+            atname = 'H3'
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
+            element = 'H'
+          elif atname in ['H2', 'H3']:
+            crdx = mol.atoms[j].crd[0]
+            crdy = mol.atoms[j].crd[1]
+            crdz = mol.atoms[j].crd[2]
             element = 'H'
           else: #the only left is atom CD
             atname = 'H'
@@ -1077,7 +1129,7 @@ def write_sc3(mol, i, gatms, sidechf):
 
 #------------------------------Sidechain------------------------------------
 def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
-        scresant, scresact, scresknh, screskco, totchg, outf, sqmopt):
+    scresgly, scresant, scresact, scresknh, screskco, scchg, outf, sqmopt):
 
     """
     For building the sidechain model
@@ -1124,22 +1176,25 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
       #2) For residue switching to NME
       elif i in scresnme:
         write_nme(mol, i, gatms, sidechf)
-      #3) For residue switching to CH3NH3+
+      #3) For residue switching to GLY
+      elif i in scresgly:
+        write_gly(mol, i, gatms, sidechf)
+      #4) For residue switching to CH3NH3+
       elif i in scresant:
         write_ant(mol, i, gatms, sidechf)
-      #4) For residue switching to CH3CO2-
+      #5) For residue switching to CH3CO2-
       elif i in scresact:
         write_act(mol, i, gatms, sidechf)
-      #5) For residue which keep N and H in the model
+      #6) For residue which keep N and H in the model
       elif i in scresknh:
         write_sc2(mol, i, gatms, sidechf)
-      #6) For residue which keep C and O in the model
+      #7) For residue which keep C and O in the model
       elif i in screskco:
         write_sc3(mol, i, gatms, sidechf)
-      #7) For normal amino acid residues
+      #8) For normal amino acid residues, keep the sidechain
       elif i in reslist.std:
         write_sc(mol, i, gatms, sidechf)
-      #8) For speical residue
+      #9) For speical residue
       else:
         write_normal(mol, reslist, i, gatms, sidechf)
 
@@ -1152,7 +1207,7 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
       AtNum = Atnum[gatm.element]
       gaelemts = gaelemts + AtNum
 
-    SpinNum = gaelemts - totchg
+    SpinNum = gaelemts - scchg
     SpinNum = int(round(SpinNum, 0))
     print "Totally there are " + str(SpinNum) + " electrons in the sidechain model."
 
@@ -1162,25 +1217,25 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
       SpinNum = 2
 
     #Gaussian
-    write_gau_optf(outf, goptf, totchg, SpinNum, gatms)
+    write_gau_optf(outf, goptf, scchg, SpinNum, gatms)
     write_gau_fcf(outf, gfcf)
 
     #GAMESS
-    write_gms_optf(goptf2, totchg, SpinNum, gatms)
-    write_gms_fcf(gfcf2, totchg, SpinNum)
+    write_gms_optf(goptf2, scchg, SpinNum, gatms)
+    write_gms_fcf(gfcf2, scchg, SpinNum)
 
     #Perform the SQM calcualtion under PM6 first
     if (sqmopt == 1) or (sqmopt == 3):
       #Delete the possible existing file
       del_files([siopf, soopf])
-      write_sqm_optf(siopf, totchg, gatms)
+      write_sqm_optf(siopf, scchg, gatms)
       if SpinNum == 1:
         print "Performing SQM optimization of sidechain model, please wait..."
         #Run SQM to optimize the coordinates
         os.system("sqm -i %s -o %s" %(siopf, soopf))
         gatms2 = get_crdinfo_from_sqm(soopf)
-        write_gau_optf(outf, goptf, totchg, SpinNum, gatms2, 4)
-        write_gms_optf(goptf2, totchg, SpinNum, gatms2, 4)
+        write_gau_optf(outf, goptf, scchg, SpinNum, gatms2, 4)
+        write_gms_optf(goptf2, scchg, SpinNum, gatms2, 4)
       else:
         print "Could not perform SQM optimization for the sidechain model " + \
               "with spin number not equal to 1."
@@ -1297,7 +1352,7 @@ def build_standard_model(mol, reslist, cutoff, msresids, outf, ionids,
 
 #---------------------------------Large model---------------------------------
 def build_large_model(mol, reslist, lmsresids, lmsresace, lmsresnme,
-                      lmsresgly, ionids, chargedict, totchg, outf,
+                      lmsresgly, ionids, chargedict, lgchg, outf,
                       watermodel, largeopt, sqmopt):
 
     #Large model file
@@ -1338,7 +1393,7 @@ def build_large_model(mol, reslist, lmsresids, lmsresace, lmsresnme,
       AtNum = Atnum[gatm.element]
       gaelemts = gaelemts + AtNum
 
-    SpinNum = gaelemts - totchg
+    SpinNum = gaelemts - lgchg
     SpinNum = int(round(SpinNum, 0))
     print "Totally there are " + str(SpinNum) + " electrons in the large model."
 
@@ -1351,31 +1406,31 @@ def build_large_model(mol, reslist, lmsresids, lmsresace, lmsresnme,
     IonLJParaDict = get_ionljparadict(watermodel)
     ionnames = [mol.atoms[i].atname for i in ionids]
     ionnames = list(set(ionnames))
-    write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames,
+    write_gau_mkf(outf, gmkf, lgchg, SpinNum, gatms, ionnames,
                   chargedict, IonLJParaDict, largeopt)
 
     #For GAMESS file
-    write_gms_mkf(gmsf, totchg, SpinNum, gatms)
+    write_gms_mkf(gmsf, lgchg, SpinNum, gatms)
 
     #-------------------------------------------------------------------------
     # Doing SQM Optimization
     #-------------------------------------------------------------------------
     if (sqmopt == 2) or (sqmopt == 3):
       del_files([simkf, somkf])
-      write_sqm_optf(simkf, totchg, gatms)
+      write_sqm_optf(simkf, lgchg, gatms)
       if SpinNum == 1:
         print "Performing SQM optimization of large model, please wait..."
         os.system("sqm -i %s -o %s" %(simkf, somkf))
         gatms2 = get_crdinfo_from_sqm(somkf)
-        write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames,
+        write_gau_mkf(outf, gmkf, lgchg, SpinNum, gatms, ionnames,
                       chargedict, IonLJParaDict, largeopt, 4)
-        write_gms_mkf(gmsf, totchg, SpinNum, gatms2, 4)
+        write_gms_mkf(gmsf, lgchg, SpinNum, gatms2, 4)
       else:
         print "Could not perform SQM optimization for the large model " + \
               "with spin number not equal to 1."
 
 def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
-                     watermodel, autoattyp, largeopt, sqmopt):
+                     watermodel, autoattyp, largeopt, sqmopt, scchg, lgchg):
 
     mol, atids, resids = get_atominfo_fpdb(pdbfile)
 
@@ -1440,6 +1495,12 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
         totchg = totchg + chargedict[mol.residues[i].resname]
     totchg = int(round(totchg, 0))
 
+    if scchg == -99:
+      scchg = totchg
+
+    if lgchg == -99:
+      lgchg = totchg
+
     #-------------------------------------------------------------------------
     # Get the residues for building the sidechain model and print
     #-------------------------------------------------------------------------
@@ -1447,6 +1508,7 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
     scresids = msresids
     scresace = []
     scresnme = []
+    scresgly = []
     scresact = []
     scresant = []
     scresknh = [] #Residues to keep N and H, which is connect to the residue
@@ -1473,26 +1535,81 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
           resatns.append(mol.atoms[i].atname)
       bdedresdict[resid] = resatns
 
-    for resid in bdedresids:
+    for resid in bdedresids: #Here the bdedresids is equal to msresids
       resatns = bdedresdict[resid]
+
+      #1. If residue is a n terminal residue
       if resid in reslist.nterm:
-        scresant.append(resid)
-      elif resid in reslist.cterm:
-        scresact.append(resid)
-      elif (resid in reslist.std) and ('O' in resatns):
-        scresace.append(resid)
-        if (resid+1 in reslist.std) and (resid+1 not in scresids):
-          scresids.append(resid+1)
-          scresnme.append(resid+1)
-        elif (resid+1 in reslist.std) and (resid+1 in scresids):
-          scresknh.append(resid+1)
-      elif (resid in reslist.std) and ('N' in resatns):
-        scresnme.append(resid)
-        if (resid-1 in reslist.std) and (resid-1 not in scresids):
-          scresids.append(resid-1)
-          scresace.append(resid-1)
-        elif (resid-1 in reslist.std) and (resid-1 in scresids):
-          screskco.append(resid-1)
+        if (set(['N3', 'O']) < set(resatns)) or (set(['N', 'O']) < set(resatns)):
+          scresgly.append(resid)
+          if resid+1 in scresids:
+            scresknh.append(resid+1)
+          else:
+            scresnme.append(resid+1)
+            scresids.append(resid+1)
+        elif ('N3' in resatns) or ('N' in resatns):
+          scresant.append(resid)
+        elif 'O' in resatns:
+          scresace.append(resid)
+          if resid+1 in scresids:
+            screskco.append(resid+1)
+          else:
+            scresnme.append(resid+1)
+            scresids.append(resid+1)
+
+      #2. If residue is a C terminal residue
+      elif (resid in reslist.cterm):
+        if (set(['N', 'O']) < set(resatns)) or (set(['N', 'OXT']) < set(resatns)):
+          scresgly.append(resid)
+          if resid-1 in scresids:
+            screskco.append(resid-1)
+          else:
+            scresace.append(resid-1)
+            scresids.append(resid-1)
+        elif ('O' in resatns) or ('OXT' in resatns):
+          scresact.append(resid)
+        elif ('N' in resatns):
+          scresnme.append(resid)
+          if (resid-1) in scresids:
+            scresknh.append(resid-1)
+          else:
+            scresace.append(resid-1)
+            scresids.append(resid-1)
+
+      #3. If residue is a standard residue but with backbone oxygen and/or nitrogen
+      elif (resid in reslist.std):
+        if set(['N', 'O']) < set(resatns):
+          scresgly.append(resid)
+          if (resid-1 in scresids) and (resid+1 in scresids):
+            screskco.append(resid-1)
+            scresknh.append(resid+1)
+          elif (resid-1 in scresids) and (resid+1 not in scresids):
+            screskco.append(resid-1)
+            scresnme.append(resid+1)
+            scresids.append(resid+1)
+          elif (resid+1 in scresids) and (resid-1 not in scresids):
+            scresknh.append(resid+1)
+            scresace.append(resid-1)
+            scresids.append(resid-1)
+          else:
+            scresace.append(resid-1)
+            scresids.append(resid-1)
+            scresnme.append(resid+1)
+            scresids.append(resid+1)
+        elif ('O' in resatns):
+          scresace.append(resid)
+          if resid+1 in scresids:
+            scresknh.append(resid+1)
+          else:
+            scresnme.append(resid+1)
+            scresids.append(resid+1)
+        elif ('N' in resatns):
+          scresnme.append(resid)
+          if (resid-1 in scresids):
+            screskco.append(resid-1)
+          else:
+            scresace.append(resid-1)
+            scresids.append(resid-1)
 
     print "***The sidechain model contains the following residues: "
     print scresids
@@ -1552,14 +1669,14 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
     print "*                                                                *"
     print "******************************************************************"
 
-    build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
-                 scresant, scresact, scresknh, screskco, totchg, outf, sqmopt)
+    build_sidechain_model(mol, reslist, scresids, scresace, scresnme, scresgly,
+                   scresant, scresact, scresknh, screskco, scchg, outf, sqmopt)
 
     build_standard_model(mol, reslist, cutoff, msresids, outf, ionids,
                          bdedatms, libdict, autoattyp)
 
     build_large_model(mol, reslist, lmsresids, lmsresace, lmsresnme, lmsresgly,
-               ionids, chargedict, totchg, outf, watermodel, largeopt, sqmopt)
+              ionids, chargedict, lgchgchg, outf, watermodel, largeopt, sqmopt)
 
     #Using the automatically detect bond method for the backup
     #else:

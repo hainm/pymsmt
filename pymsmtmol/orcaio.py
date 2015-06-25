@@ -3,7 +3,7 @@
 from __future__ import absolute_import
 from pymsmtmol.gauio import write_gauatm
 
-def write_orca_optf(outf, ofcf, totchg, SpinNum, gatms):
+def write_orca_optf(outf, ofcf, scchg, SpinNum, gatms):
 
     ##ORCA constant calculation file
     orcafcf = open(ofcf, 'w')
@@ -17,7 +17,7 @@ def write_orca_optf(outf, ofcf, totchg, SpinNum, gatms):
     print >> orcafcf, "end"
     print >> orcafcf, "! Opt"
     print >> orcafcf, "%%base \"%s\"" %outf
-    print >> orcafcf, '*xyz', str(totchg), str(SpinNum)
+    print >> orcafcf, '*xyz', str(scchg), str(SpinNum)
     orcafcf.close()
 
     #Coordinates

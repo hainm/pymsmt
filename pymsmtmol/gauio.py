@@ -61,7 +61,7 @@ def write_sdd_basis(gatms, gauf):
     print >> w_gauf, "****"
     w_gauf.close()
 
-def write_gau_optf(outf, goptf, totchg, SpinNum, gatms, signum=3):
+def write_gau_optf(outf, goptf, scchg, SpinNum, gatms, signum=3):
 
     ##Geometry Optimization file
     optf = open(goptf, 'w')
@@ -75,7 +75,7 @@ def write_gau_optf(outf, goptf, totchg, SpinNum, gatms, signum=3):
     print >> optf, " "
     print >> optf, "CLR"
     print >> optf, " "
-    print >> optf, "%d  %d" %(totchg, SpinNum)
+    print >> optf, "%d  %d" %(scchg, SpinNum)
     optf.close()
 
     if signum == 3:
@@ -105,7 +105,7 @@ def write_gau_fcf(outf, gfcf):
     print >> fcf, " "
     fcf.close()
 
-def write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict,
+def write_gau_mkf(outf, gmkf, lgchg, SpinNum, gatms, ionnames, chargedict,
                   IonLJParaDict, largeopt, signum=3):
 
     ##MK RESP input file
@@ -126,7 +126,7 @@ def write_gau_mkf(outf, gmkf, totchg, SpinNum, gatms, ionnames, chargedict,
     print >> mkf, " "
     print >> mkf, "CLR"
     print >> mkf, " "
-    print >> mkf, "%d  %d" %(totchg, SpinNum)
+    print >> mkf, "%d  %d" %(lgchg, SpinNum)
     mkf.close()
 
     #For Gaussian file

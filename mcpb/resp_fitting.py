@@ -202,7 +202,7 @@ def get_equal_atoms(mol, resid, blist, iddict):
               if len(iddict[atc]) == 2:
                 iddict[atc] = (iddict[atc][0], iddict[atc][1], 0)
 
-def add_restriction(frespin, libdict, mol, resids, reslist, mcresids, boresids,
+def add_restriction(frespin, libdict, mol, resids, reslist, mcresids, bnoresids,
                     angresids, iddict, chgmod, fixchg_resids):
 
     fresp = open(frespin, 'a')
@@ -223,7 +223,7 @@ def add_restriction(frespin, libdict, mol, resids, reslist, mcresids, boresids,
     elif (chgmod in [1, 2, 3]):
       for i in resids:
         resname = mol.residues[i].resname
-        if (i not in boresids) and (i in mcresids) and \
+        if (i not in bnoresids) and (i in mcresids) and \
            (i in reslist.std):
           for j in range(0, len(mol.residues[i].resconter)):
             #get new atom id
@@ -268,7 +268,7 @@ def add_restriction(frespin, libdict, mol, resids, reslist, mcresids, boresids,
     fresp.close()
 
 def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
-                         chgmod, fixchg_resids):
+                         chgmod, fixchg_resids, lgchg):
 
     libdict, chargedict = get_lib_dict(ffchoice)
 
@@ -283,7 +283,7 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
 
     blist = get_mc_blist(mol, atids, ionids, stfpf)
 
-    boatids = [] #Binding Backbone, C-terminal Oxygen Atom IDs
+    bnoatids = [] #Binding backbone N and C Atom IDs
 
     mcresids = [] #Metal site residues
     stfpff = open(stfpf, 'r')
@@ -295,16 +295,17 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
       else:
         line = line.strip('\n')
         line = line.split()
-        if (line[-1][-1] in ['O', 'OXT']):
+        if (line[-1][-1] in ['N3', 'N', 'O', 'OXT']):
           atid, atom = line[-1].split('-')
-          boatids.append(int(atid))
+          bnoatids.append(int(atid))
     stfpff.close()
 
-    boresids = [] #Binding Backbone, C-terminal Oxygen Atom Residue IDs
-    for i in boatids:
+    bnoresids = [] #Binding Backbone N and C Residue IDs, which are not fitted
+                   #with backbone restriction in the charge fitting
+    for i in bnoatids:
       resid = mol.atoms[i].resid
-      if resid not in boresids:
-        boresids.append(resid)
+      if resid not in bnoresids:
+        bnoresids.append(resid)
 
     angresids = [] #ACE, NME, GLY residues
     for i in resids:
@@ -326,6 +327,9 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
 
     totchg = int(round(totchg, 0))
 
+    if lgchg == -99:
+      lgchg = totchg
+
     #-------------------------------------------------------------------------
     ##############RESP1.IN file###############################################
     #-------------------------------------------------------------------------
@@ -345,7 +349,7 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
     print >> fresp1, " &end"
     print >> fresp1, "    1.0"
     print >> fresp1, "Resp charges for organic molecule"
-    print >> fresp1, "%5d" %totchg,
+    print >> fresp1, "%5d" %lgchg,
     print >> fresp1, "%4d" %len(atids)
 
     #2. print the 2nd part, the free and fozen atoms---------------------------
@@ -379,7 +383,7 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
     fresp1.close()
 
     add_restriction('resp1.in', libdict, mol, resids, reslist, mcresids,
-                    boresids, angresids, iddict, chgmod, fixchg_resids)
+                    bnoresids, angresids, iddict, chgmod, fixchg_resids)
 
     #-------------------------------------------------------------------------
     ####################RESP2.IN file#########################################
@@ -401,7 +405,7 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
     print >> fresp2, " &end"
     print >> fresp2, "    1.0"
     print >> fresp2, "Resp charges for organic molecule"
-    print >> fresp2, "%5d" %totchg,
+    print >> fresp2, "%5d" %lgchg,
     print >> fresp2, "%4d" %len(atids)
 
     #2. print the 2nd part, the free or frozen information---------------------
@@ -411,10 +415,10 @@ def gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
     fresp2.close()
 
     add_restriction('resp2.in', libdict, mol, resids, reslist, mcresids,
-                    boresids, angresids, iddict, chgmod, fixchg_resids)
+                    bnoresids, angresids, iddict, chgmod, fixchg_resids)
 
 def resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids,\
-                 ffchoice, mol2fs, metcenres2, chgmod, fixchg_resids, g0x):
+           ffchoice, mol2fs, metcenres2, chgmod, fixchg_resids, g0x, lgchg):
 
     print "******************************************************************"
     print "*                                                                *"
@@ -423,7 +427,7 @@ def resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids,\
     print "******************************************************************"
 
     gene_resp_input_file(lgpdbf, ionids, stfpf, ffchoice, mol2fs,
-                         chgmod, fixchg_resids)
+                         chgmod, fixchg_resids, lgchg)
 
     #-------------------------------------------------------------------------
     ####################RESP charge fitting###################################
