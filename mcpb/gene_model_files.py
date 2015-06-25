@@ -1257,23 +1257,26 @@ def build_standard_model(mol, reslist, cutoff, msresids, outf, ionids,
         elif autoattyp == 2:
           #for metal ion
           for k in range(0, len(ionids)):
-            if j == ionids[k]:
+            if (j == ionids[k]) and (k < 9):
               k2 = k + 1
-              attype2 = 'Z' + str(k2)
+              attype2 = 'M' + str(k2)
+            elif (j == ionids[k]) and (k >= 9):
+              k3 = k - 9 + 1
+              attype2 = 'X' + str(k3)
           #for bonded atoms
           for k in range(0, len(bdedatms)):
-            if j == bdedatms[k] and k < 9:
-              k3 = k + 1
-              attype2 = 'X' + str(k3)
-            elif j == bdedatms[k] and k >= 9:
-              k4 = k - 9 + 1
+            if (j == bdedatms[k]) and (k < 9):
+              k4 = k + 1
               attype2 = 'Y' + str(k4)
-            elif j == bdedatms[k] and k >= 18:
-              k5 = k - 18 + 1
-              attype2 = 'A' + str(k5)
-            elif j == bdedatms[k] and k >= 27:
-              k6 = k - 27 + 1
-              attype2 = 'B' + str(k6)
+            elif (j == bdedatms[k]) and (k >= 9):
+              k5 = k - 9 + 1
+              attype2 = 'Z' + str(k5)
+            elif (j == bdedatms[k]) and (k >= 18):
+              k6 = k - 18 + 1
+              attype2 = 'A' + str(k6)
+            elif (j == bdedatms[k]) and (k >= 27):
+              k7 = k - 27 + 1
+              attype2 = 'B' + str(k7)
 
         print >> stpff, str(resid) + '-' + resname + '-' + atname, \
                  str(atid), attype, '->', attype2
