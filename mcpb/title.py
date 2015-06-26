@@ -8,8 +8,8 @@ def print_title(program, version, release_time):
     print "******************************************************************"
     if program == 'MCPB.py':
       print "*                  Welcome to use MCPB.py program                *"
-      print "*                        Version: %s                      *" %version
-      print "*                  Releasing Date: %s                  *" %release_time
+      print "*                         Version %s                      *" %version
+      print "*                  Pre-release Date: %s                *" %release_time
     elif program == 'PdbSearcher.py':
       print "*               Welcome to use PdbSearcher.py program            *"
     elif program == 'AFQMM_NMR.py':
@@ -19,7 +19,7 @@ def print_title(program, version, release_time):
     print "*                        Author: Pengfei Li                      *"
     print "*                        Merz Research Group                     *"
     print "*                     Michigan State University                  *"
-    print "*                       All Rights Reserved                      *"
+    print "*                        All Rights Reserved                     *"
     print "******************************************************************"
     print "                                                                  "
     print "                                                                  "
