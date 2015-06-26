@@ -1,13 +1,12 @@
-source oldff/leaprc.ff94
+source leaprc.ff14SB
 source leaprc.gaff
 addAtomTypes {
-        { "X1"  "S" "sp3" }
-        { "X2"  "S" "sp3" }
-        { "X3"  "S" "sp3" }
-        { "X4"  "S" "sp3" }
-        { "Z1"  "Zn" "sp3" }
+        { "Y1"  "S" "sp3" }
+        { "Y3"  "S" "sp3" }
+        { "Y2"  "S" "sp3" }
+        { "M1"  "Zn" "sp3" }
+        { "Y4"  "S" "sp3" }
 }
-loadoff atomic_ions.lib
 loadamberparams frcmod.ions1lsm_hfe_tip3p
 CM1 = loadmol2 CM1.mol2
 CM2 = loadmol2 CM2.mol2
