@@ -217,6 +217,24 @@ chgfix_resids Specify the residues' IDs whose charges are going to be fixed
 \end_layout
 
 \begin_layout Description
+scmodel_chg Specify the total charge of the sidechain model.
+ [The default value of the charge will be assigned automatically by
+ the program, which is not guaranteed to be right.
+ Careful check is suggested from runnning the Gaussian/GAMESS-US program.
+ If it is not right, you can add this option with right charge into the
+ input file and regenerate the modeling files.]
+\end_layout
+
+\begin_layout Description
+lgmodel_chg Specify the total charge of the large model.
+ [The default value of the charge will be assigned automatically by
+ the program, which is not guaranteed to be right.
+ Careful check is suggested from runnning the Gaussian/GAMESS-US program.
+ If it is not right, you can add this option with right charge into the
+ input file and regenerate the modeling files.]
+\end_layout
+
+\begin_layout Description
 naa_mol2files The variable used to indicate non-amino acid mol2 file(s)
  in the metal complex if there are any nonstandard residue(s) in the metal
  complex.

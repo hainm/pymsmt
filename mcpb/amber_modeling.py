@@ -169,7 +169,7 @@ def gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids,\
             if atnewtype not in atomdefs.keys():
               atomdefs[atnewtype] = element
             else:
-              if element != atomdefs[atomnewtype]:
+              if element != atomdefs[atnewtype]:
                 raise pymsmtError('There are atoms in fingerprint file '
                                   'of standard model with same atom type '
                                   'but different element.')
@@ -290,19 +290,29 @@ def gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids,\
                    str(resid2) + '.' + atname2
 
     ##Nonstandard residues with nearby residues
+
     if model in [1, 2]:
+      bondcmds = []
       for i in metcenres1:
         resname = mol0.residues[i].resname
         print 'Renamed residues includes: ' + str(i) + '-' + resname
-        if (i in reslist0.cterm) and (resname in reslist0.nterm):
-          pass
-        elif i in reslist0.nterm:
-          print >> lp, 'bond', 'mol.' + str(i) + '.C', 'mol.' + str(i+i) + '.N'
+        if i in reslist0.nterm:
+          cmdi = 'bond mol.' + str(i) + '.C' + ' mol.' + str(i+i) + '.N'
+          if cmdi not in bondcmds:
+            bondcmds.append(cmdi)
         elif i in reslist0.cterm:
-          print >> lp, 'bond', 'mol.' + str(i-1) + '.C', 'mol.' + str(i) + '.N'
+          cmdi = 'bond mol.' + str(i-1) + '.C' + ' mol.' + str(i) + '.N'
+          if cmdi not in bondcmds:
+            bondcmds.append(cmdi)
         elif i in reslist0.std:
-          print >> lp, 'bond', 'mol.' + str(i-1) + '.C', 'mol.' + str(i) + '.N'
-          print >> lp, 'bond', 'mol.' + str(i) + '.C', 'mol.' + str(i+1) + '.N'
+          cmdi = 'bond mol.' + str(i-1) + '.C' + ' mol.' + str(i) + '.N'
+          if cmdi not in bondcmds:
+            bondcmds.append(cmdi)
+          cmdi = 'bond mol.' + str(i) + '.C' + ' mol.' + str(i+1) + '.N'
+          if cmdi not in bondcmds:
+            bondcmds.append(cmdi)
+      for j in bondcmds:
+          print >> lp, j
 
     #Save dry structure
     print >> lp, 'savepdb mol %s_dry.pdb' %gname

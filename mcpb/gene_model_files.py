@@ -98,6 +98,9 @@ def get_ms_ids(mol, atids, ionids, cutoff):
 
     return bdatmids, bdatnams
 
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 #---------------------Write ACE residue into the PDB file---------------------
 def write_ace(mol, i, gatms, pdbf, fpf=None):
 
@@ -864,7 +867,7 @@ def write_gly(mol, i, gatms, pdbf, fpf=None):
 def write_normal(mol, reslist, i, gatms, pdbf, fpf=None):
 
     print "It contains the residue " + str(i) + '-' + \
-          mol.residues[i].resname
+          mol.residues[i].resname + " as normal."
 
     for j in mol.residues[i].resconter:
       tiker = mol.atoms[j].gtype
@@ -909,7 +912,7 @@ def write_sc(mol, i, gatms, sidechf):
     global H_NAMES, SH_NAMES, GH_NAMES
 
     print "It contains the residue " + str(i) + '-' + \
-          mol.residues[i].resname
+          mol.residues[i].resname + " as sidechain coordinated."
 
     #get the coordinates of the Ca atom
     for j in mol.residues[i].resconter:
@@ -931,7 +934,7 @@ def write_sc(mol, i, gatms, sidechf):
 
     for j in mol.residues[i].resconter:
       atname = mol.atoms[j].atname
-      if (atname not in ['H', 'HN', 'O']): #HN is a alias of H
+      if (atname not in ['H', 'HN', 'O', 'OXT', 'H1', 'H2', 'H3', 'HN1', 'HN2', 'HN3']): #HN is a alias of H
         #These two backbone atoms will be deleted in the sidechain modeling
         resname = mol.residues[i].resname
         if (atname == 'CA'):
@@ -947,7 +950,7 @@ def write_sc(mol, i, gatms, sidechf):
           crdy = cacrd[1] + bdld['CH'] * (mol.atoms[j].crd[1] - cacrd[1])/bvec
           crdz = cacrd[2] + bdld['CH'] * (mol.atoms[j].crd[2] - cacrd[2])/bvec
           element = 'H'
-        else:
+        else: #Which is in the sidechain
           crdx = mol.atoms[j].crd[0]
           crdy = mol.atoms[j].crd[1]
           crdz = mol.atoms[j].crd[2]
@@ -979,12 +982,12 @@ def write_sc(mol, i, gatms, sidechf):
 #to the metal ion and it is beside the residue which use backbone Oxygen
 #to coordinate with the metal ion
 
-def write_sc2(mol, i, gatms, sidechf):
+def write_sc_knh(mol, i, gatms, sidechf):
 
     global H_NAMES, SH_NAMES, GH_NAMES, SH_NAMES2
 
     print "It contains the residue " + str(i) + '-' + \
-          mol.residues[i].resname
+          mol.residues[i].resname + " as keeping sidechain and NH group."
 
     #get the coordinates of the Ca atom
     for j in mol.residues[i].resconter:
@@ -1006,7 +1009,9 @@ def write_sc2(mol, i, gatms, sidechf):
 
     for j in mol.residues[i].resconter:
       atname = mol.atoms[j].atname
-      if (atname not in ['O']):
+      #Get rid of O
+      #Change CA to CH3, C, HA to Hs, and keep remaining
+      if (atname not in ['O', 'OXT']):
         resname = mol.residues[i].resname
         if (atname == 'CA'):
           atname = 'CH3'
@@ -1059,12 +1064,12 @@ def write_sc2(mol, i, gatms, sidechf):
 #to the metal ion and it is beside the residue which use backbone Nitrogen
 #to coordinate with the metal ion
 
-def write_sc3(mol, i, gatms, sidechf):
+def write_sc_kco(mol, i, gatms, sidechf):
 
     global H_NAMES, SH_NAMES, GH_NAMES, SH_NAMES2
 
     print "It contains the residue " + str(i) + '-' + \
-          mol.residues[i].resname
+          mol.residues[i].resname + " as keeping sidechain and CO group."
 
     #get the coordinates of the Ca atom
     for j in mol.residues[i].resconter:
@@ -1086,7 +1091,9 @@ def write_sc3(mol, i, gatms, sidechf):
 
     for j in mol.residues[i].resconter:
       atname = mol.atoms[j].atname
-      if (atname not in ['H', 'H1', 'H2', 'H3', 'HN', 'HN1', 'HN2', 'HN3']):
+      if (atname not in ['H', 'HN', 'H1', 'H2', 'H3', 'HN1', 'HN2', 'HN3']):
+      #Get rid of the N and H atoms
+      #Change CA to CH3, change N, HA to Hs and keep CB and sidechain
         resname = mol.residues[i].resname
         if (atname == 'CA'):
           atname = 'CH3'
@@ -1187,10 +1194,10 @@ def build_sidechain_model(mol, reslist, scresids, scresace, scresnme,
         write_act(mol, i, gatms, sidechf)
       #6) For residue which keep N and H in the model
       elif i in scresknh:
-        write_sc2(mol, i, gatms, sidechf)
+        write_sc_knh(mol, i, gatms, sidechf)
       #7) For residue which keep C and O in the model
       elif i in screskco:
-        write_sc3(mol, i, gatms, sidechf)
+        write_sc_kco(mol, i, gatms, sidechf)
       #8) For normal amino acid residues, keep the sidechain
       elif i in reslist.std:
         write_sc(mol, i, gatms, sidechf)
@@ -1257,7 +1264,7 @@ def build_standard_model(mol, reslist, cutoff, msresids, outf, ionids,
 
     for i in msresids:
       print "It contains the residue " + str(i) + '-' + \
-            mol.residues[i].resname
+            mol.residues[i].resname + " as normal."
 
       for j in mol.residues[i].resconter:
 
@@ -1540,41 +1547,50 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
 
       #1. If residue is a n terminal residue
       if resid in reslist.nterm:
-        if (set(['N3', 'O']) < set(resatns)) or (set(['N', 'O']) < set(resatns)):
+        if (set(['N3', 'O']) == set(resatns)) or (set(['N', 'O']) == set(resatns)):
           scresgly.append(resid)
           if resid+1 in scresids:
             scresknh.append(resid+1)
           else:
             scresnme.append(resid+1)
-            scresids.append(resid+1)
         elif ('N3' in resatns) or ('N' in resatns):
-          scresant.append(resid)
+          if len(resatns) == 1: #If only nitrogen bond to
+            scresant.append(resid)
+          else:
+            scresknh.append(resid)
         elif 'O' in resatns:
-          scresace.append(resid)
+          if len(resatns) == 1: #If only oxygen bond to
+            scresace.append(resid)
+          else:
+            screskco.append(resid)
           if resid+1 in scresids:
-            screskco.append(resid+1)
+            scresknh.append(resid+1)
           else:
             scresnme.append(resid+1)
-            scresids.append(resid+1)
-
       #2. If residue is a C terminal residue
       elif (resid in reslist.cterm):
-        if (set(['N', 'O']) < set(resatns)) or (set(['N', 'OXT']) < set(resatns)):
+        if (set(['N', 'O']) == set(resatns)) or (set(['N', 'OXT']) == set(resatns)):
           scresgly.append(resid)
           if resid-1 in scresids:
             screskco.append(resid-1)
           else:
             scresace.append(resid-1)
-            scresids.append(resid-1)
-        elif ('O' in resatns) or ('OXT' in resatns):
+        elif set(['O', 'OXT']) == set(resatns):
           scresact.append(resid)
+        elif ('O' in resatns) or ('OXT' in resatns):
+          if len(resatns) == 1: #If only oxygen bond to
+            scresact.append(resid)
+          else:
+            screskco.append(resid)
         elif ('N' in resatns):
-          scresnme.append(resid)
+          if len(resatns) == 1: #If only nitrogen bond to
+            scresnme.append(resid)
+          else:
+            scresknh.append(resid)
           if (resid-1) in scresids:
-            scresknh.append(resid-1)
+            screskco.append(resid-1)
           else:
             scresace.append(resid-1)
-            scresids.append(resid-1)
 
       #3. If residue is a standard residue but with backbone oxygen and/or nitrogen
       elif (resid in reslist.std):
@@ -1586,30 +1602,35 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
           elif (resid-1 in scresids) and (resid+1 not in scresids):
             screskco.append(resid-1)
             scresnme.append(resid+1)
-            scresids.append(resid+1)
           elif (resid+1 in scresids) and (resid-1 not in scresids):
             scresknh.append(resid+1)
             scresace.append(resid-1)
-            scresids.append(resid-1)
           else:
             scresace.append(resid-1)
-            scresids.append(resid-1)
             scresnme.append(resid+1)
-            scresids.append(resid+1)
         elif ('O' in resatns):
-          scresace.append(resid)
+          if len(resatns) == 1: #If only O bond to, no sidechain atom bond to
+            scresace.append(resid)
+          else:
+            screskco.append(resid)
           if resid+1 in scresids:
             scresknh.append(resid+1)
           else:
             scresnme.append(resid+1)
-            scresids.append(resid+1)
         elif ('N' in resatns):
-          scresnme.append(resid)
+          if len(resatns) == 1: #If only N bond to, no sidechain atom bond to
+            scresnme.append(resid)
+          else:
+            scresknh.append(resid)
           if (resid-1 in scresids):
             screskco.append(resid-1)
           else:
             scresace.append(resid-1)
-            scresids.append(resid-1)
+
+    scresids = scresids + scresace + scresnme + scresgly + scresknh + \
+               screskco + scresant + scresact
+    scresids = list(set(scresids))
+    scresids.sort()
 
     print "***The sidechain model contains the following residues: "
     print scresids
@@ -1654,7 +1675,7 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
 
     lmsresids = msresids + lmsresace + lmsresnme + lmsresgly #Combine the residues
     lmsresids = list(set(lmsresids)) #Delete repeat elements
-    lmsresids = sorted(lmsresids) #Sort the list
+    lmsresids.sort() #Sort the list
 
     print "***The large model contains the following residues: "
     print lmsresids
@@ -1676,7 +1697,7 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
                          bdedatms, libdict, autoattyp)
 
     build_large_model(mol, reslist, lmsresids, lmsresace, lmsresnme, lmsresgly,
-              ionids, chargedict, lgchgchg, outf, watermodel, largeopt, sqmopt)
+              ionids, chargedict, lgchg, outf, watermodel, largeopt, sqmopt)
 
     #Using the automatically detect bond method for the backup
     #else:

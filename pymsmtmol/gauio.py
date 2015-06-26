@@ -191,10 +191,10 @@ def get_crds_from_fchk(fname, bstring, estring):
     fp = open(fname, 'r')
     i = 1
     for line in fp:
-      if (line[0:bl] == bstring) and (blc == 0):
+      if (bstring in line) and (blc == 0):
         beginl = i
         blc = blc + 1
-      elif (line[0:el] == estring) and (elc == 0):
+      elif (estring in line) and (elc == 0):
         endl = i
         elc = elc + 1
       i = i + 1
@@ -226,10 +226,10 @@ def get_matrix_from_fchk(fname, bstring, estring, msize):
     fp = open(fname, 'r')
     i = 1
     for line in fp:
-      if (line[0:bl] == bstring) and (blc == 0):
+      if (bstring in line) and (blc == 0):
         beginl = i
         blc = blc + 1
-      elif (line[0:el] == estring) and (elc == 0):
+      elif (estring in line) and (elc == 0):
         endl = i
         elc = elc + 1
       i = i + 1

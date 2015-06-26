@@ -31,6 +31,53 @@ import math
 # Related fuctions
 #-----------------------------------------------------------------------------
 
+def get_attypdict(stfpf, atids):
+
+    #From standard fingerprint file to get the atomtype information
+    attypdict = {}
+    fpinfo = open(stfpf, 'r')
+    for line in fpinfo:
+      if line[0:4] != "LINK":
+        line = line.strip('\n')
+        line = line.split(' ')
+        line = [i for i in line if i != '']
+        if len(line[-1]) == 1:
+          line[-1] = line[-1] + ' '
+        longatname = line[0].split('-')
+        atname = longatname[-1]
+        if (int(line[1]) in atids):
+          attypdict[int(line[1])] = line[-1]
+    fpinfo.close()
+
+    for i in atids:
+      if i not in attypdict.keys():
+        #print 'atomid %d Not find in standard fingerprint file.' %i
+        attypdict[i] = 'XX'
+
+    return attypdict
+
+def get_misstyps(pref):
+
+    #pre_frcmod file
+    missbondtyps = []
+    missangtyps = []
+
+    prefrcmod = open(pref, 'r')
+    for line in prefrcmod:
+      line = line.strip('\n')
+      if line[0:4] == 'NON ':
+        if (line[6:7] == '-') and (line[9:10] == '-'):
+          at1 = line[4:6]
+          at2 = line[7:9]
+          at3 = line[10:12]
+          missangtyps.append((at1, at2, at3))
+        else:
+          at1 = line[4:6]
+          at2 = line[7:9]
+          missbondtyps.append((at1, at2))
+    prefrcmod.close()
+    return missbondtyps, missangtyps
+
 def avg_bond_para(misbondat12, bondlen, bfconst):
     # bond length has 4 decimal places
     # bond force constant has 1 decimal place
@@ -172,50 +219,13 @@ def gene_by_empirical_way(scpdbf, ionids, stfpf, pref, finf):
     print "*                                                                *"
     print "******************************************************************"
 
+    #Read from sidechain pdb
     mol, atids, resids = get_atominfo_fpdb(scpdbf)
-
     blist = get_mc_blist(mol, atids, ionids, stfpf)
-
     alist = get_alist(mol, blist)
 
-    #fingerprint file
-    attypdict = {}
-    fpinfo = open(stfpf, 'r')
-    for line in fpinfo:
-      if line[0:4] != "LINK":
-        line = line.strip('\n')
-        line = line.split(' ')
-        line = [i for i in line if i != '']
-        if len(line[-1]) == 1:
-          line[-1] = line[-1] + ' '
-        longatname = line[0].split('-')
-        atname = longatname[-1]
-        if (int(line[1]) in atids):
-          if atname in ['N', 'HA', 'C']:
-            attypdict[int(line[1])] = 'HC'
-          elif atname == "CA":
-            attypdict[int(line[1])] = 'CT'
-          else:
-            attypdict[int(line[1])] = line[-1]
-    fpinfo.close()
-
-    #pre_frcmod file
-    missangtyps = []
-    missbondtyps = []
-    prefrcmod = open(pref, 'r')
-    for line in prefrcmod:
-      line = line.strip('\n')
-      if line[0:4] == 'NON ':
-        if (line[6:7] == '-') and (line[9:10] == '-'):
-          at1 = line[4:6]
-          at2 = line[7:9]
-          at3 = line[10:12]
-          missangtyps.append((at1, at2, at3))
-        else:
-          at1 = line[4:6]
-          at2 = line[7:9]
-          missbondtyps.append((at1, at2))
-    prefrcmod.close()
+    attypdict = get_attypdict(stfpf, atids)
+    missbondtyps, missangtyps = get_misstyps(pref)
 
     finalparmdict = {}
 
@@ -298,9 +308,7 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
     print "==================Using the Seminario method to solve the problem."
 
     mol, atids, resids = get_atominfo_fpdb(scpdbf)
-
     blist = get_mc_blist(mol, atids, ionids, stfpf)
-
     alist = get_alist(mol, blist)   
 
     #crds after optimization
@@ -324,44 +332,8 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
     for i in range(0, len(atids)):
       natids[atids[i]] = i + 1
 
-    #fingerprint file
-    attypdict = {}
-    fpinfo = open(stfpf, 'r')
-    for line in fpinfo:
-      if line[0:4] != "LINK":
-        line = line.strip('\n')
-        line = line.split(' ')
-        line = [i for i in line if i != '']
-        if len(line[-1]) == 1:
-          line[-1] = line[-1] + ' '
-        longatname = line[0].split('-')
-        atname = longatname[-1]
-        if int(line[1]) in atids:
-          if atname in ['N', 'HA', 'C']:
-            attypdict[int(line[1])] = 'HC'
-          elif atname == "CA":
-            attypdict[int(line[1])] = 'CT'
-          else:
-            attypdict[int(line[1])] = line[-1]
-    fpinfo.close()
-
-    #pre_frcmod file
-    missangtyps = []
-    missbondtyps = []
-    prefrcmod = open(pref, 'r')
-    for line in prefrcmod:
-      line = line.strip('\n')
-      if line[0:4] == 'NON ':
-        if (line[6:7] == '-') and (line[9:10] == '-'):
-          at1 = line[4:6]
-          at2 = line[7:9]
-          at3 = line[10:12]
-          missangtyps.append((at1, at2, at3))
-        else:
-          at1 = line[4:6]
-          at2 = line[7:9]
-          missbondtyps.append((at1, at2))
-    prefrcmod.close()
+    attypdict = get_attypdict(stfpf, atids)
+    missbondtyps, missangtyps = get_misstyps(pref)
 
     finalparmdict = {}
 
@@ -499,9 +471,7 @@ def gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, pref, finf, logfname):
 
     #pdb file
     mol, atids, resids = get_atominfo_fpdb(scpdbf)
-
     blist = get_mc_blist(mol, atids, ionids, stfpf)
-
     alist = get_alist(mol, blist)   
 
     #new id dict
@@ -509,44 +479,8 @@ def gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, pref, finf, logfname):
     for i in range(0, len(atids)):
       natids[atids[i]] = i + 1
 
-    #fingerprint file to get the atom type
-    attypdict = {}
-    fpinfo = open(stfpf, 'r')
-    for line in fpinfo:
-      if line[0:4] != "LINK":
-        line = line.strip('\n')
-        line = line.split(' ')
-        line = [i for i in line if i != '']
-        if len(line[-1]) == 1:
-          line[-1] = line[-1] + ' '
-        longatname = line[0].split('-')
-        atname = longatname[-1]
-        if (int(line[1]) in atids):
-          if atname in ['N', 'HA', 'C']:
-            attypdict[natids[int(line[1])]] = 'HC'
-          elif atname == "CA":
-            attypdict[natids[int(line[1])]] = 'CT'
-          else:
-            attypdict[natids[int(line[1])]] = line[-1]
-    fpinfo.close()
-
-    #pre_frcmod file
-    missangtyps = []
-    missbondtyps = []
-    prefrcmod = open(pref, 'r')
-    for line in prefrcmod:
-      line = line.strip('\n')
-      if line[0:4] == 'NON ':
-        if (line[6:7] == '-') and (line[9:10] == '-'):
-          at1 = line[4:6]
-          at2 = line[7:9]
-          at3 = line[10:12]
-          missangtyps.append((at1, at2, at3))
-        else:
-          at1 = line[4:6]
-          at2 = line[7:9]
-          missbondtyps.append((at1, at2))
-    prefrcmod.close()
+    attypdict = get_attypdict(stfpf, atids)
+    missbondtyps, missangtyps = get_misstyps(pref)
 
     #final parameter dicts
     finalparmdict = {}
