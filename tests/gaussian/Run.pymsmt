@@ -1,0 +1,54 @@
+#!/bin/sh
+
+. ../../program_error.sh
+
+dacdif=$AMBERHOME/AmberTools/test/dacdif
+
+if [ -z "$mcpbpy" ]; then
+   mcpbpy="$AMBERHOME/bin/MCPB.py"
+fi
+
+input=1A5T.in
+output=mcpbpy.out
+
+$mcpbpy -i $input --step 1 > $output 2>&1 || error
+$mcpbpy -i $input --step 2 >> $output 2>&1 || error
+$mcpbpy -i $input --step 3 >> $output 2>&1 || error
+$mcpbpy -i $input --step 4 >> $output 2>&1 || error
+tleap -s -f 1A5T_tleap.in > 1A5T_tleap.out
+
+#For modeling files generation
+$dacdif 1A5T_sidechain.pdb.save 1A5T_sidechain.pdb
+$dacdif 1A5T_sidechain_opt.com.save 1A5T_sidechain_opt.com
+$dacdif 1A5T_sidechain_opt.inp.save 1A5T_sidechain_opt.inp
+$dacdif 1A5T_sidechain_fc.inp.save 1A5T_sidechain_fc.inp
+$dacdif 1A5T_sidechain_fc.com.save 1A5T_sidechain_fc.com
+$dacdif 1A5T_standard.pdb.save 1A5T_standard.pdb
+$dacdif 1A5T_standard.fingerprint.save 1A5T_standard.fingerprint
+$dacdif 1A5T_large_mk.inp.save 1A5T_large_mk.inp
+$dacdif 1A5T_large_mk.com.save 1A5T_large_mk.com
+$dacdif 1A5T_large.pdb.save 1A5T_large.pdb
+$dacdif 1A5T_large.fingerprint.save 1A5T_large.fingerprint
+#For parameter calcualtion
+$dacdif 1A5T_pre.frcmod.save 1A5T_pre.frcmod
+$dacdif 1A5T.frcmod.save 1A5T.frcmod
+#For resp charge fitting
+$dacdif resp1.in.save resp1.in
+$dacdif resp2.in.save resp2.in
+$dacdif ZN1.mol2.save ZN1.mol2
+$dacdif CM4.mol2.save CM4.mol2
+$dacdif CM3.mol2.save CM3.mol2
+$dacdif CM2.mol2.save CM2.mol2
+$dacdif CM1.mol2.save CM1.mol2
+#For generating new PDB file
+$dacdif 1A5T_mcpbpy.pdb.save 1A5T_mcpbpy.pdb
+#For the tleap modeling
+$dacdif 1A5T_tleap.in.save 1A5T_tleap.in
+$dacdif 1A5T_dry.prmtop.save 1A5T_dry.prmtop
+$dacdif 1A5T_dry.pdb.save 1A5T_dry.pdb
+$dacdif 1A5T_solv.prmtop.save 1A5T_solv.prmtop
+$dacdif 1A5T_solv.pdb.save 1A5T_solv.pdb
+
+/bin/rm -f $output
+
+exit 0
