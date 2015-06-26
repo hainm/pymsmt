@@ -74,7 +74,7 @@ parser.add_option("--fchk", dest="fchkfile", type='string',
 #==============================================================================
 # Print the title of the program
 version = 'Beta V1.1'
-release_time = 'June 24 2015'
+release_time = 'June 26 2015'
 print_title('MCPB.py', version, release_time)
 options.step = options.step.lower()
 
