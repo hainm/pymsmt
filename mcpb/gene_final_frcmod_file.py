@@ -474,10 +474,10 @@ def gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, pref, finf, logfname):
     blist = get_mc_blist(mol, atids, ionids, stfpf)
     alist = get_alist(mol, blist)   
 
-    #new id dict
-    natids = {}
+    #reverse new id dict
+    rvnatids = {}
     for i in range(0, len(atids)):
-      natids[atids[i]] = i + 1
+      rvnatids[i+1] = atids[i]
 
     attypdict = get_attypdict(stfpf, atids)
     missbondtyps, missangtyps = get_misstyps(pref)
@@ -494,7 +494,7 @@ def gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, pref, finf, logfname):
         if len(sturefs[i]) == 2:
           at1 = sturefs[i][0]
           at2 = sturefs[i][1]
-          bondtyp = (attypdict[at1], attypdict[at2])
+          bondtyp = (attypdict[rvnatids[at1]], attypdict[rvnatids[at2]])
           "The unit in log file is Angs."
           if bondtyp == misbond or bondtyp[::-1] == misbond:
             dis = vals[i]
@@ -520,7 +520,7 @@ def gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, pref, finf, logfname):
           at1 = sturefs[i][0]
           at2 = sturefs[i][1]
           at3 = sturefs[i][2]
-          angtyp = (attypdict[at1], attypdict[at2], attypdict[at3])
+          angtyp = (attypdict[rvnatids[at1]], attypdict[rvnatids[at2]], attypdict[rvnatids[at3]])
           if angtyp == misang or angtyp[::-1] == misang:
             angval = vals[i]
             fcfinal = fcs[i] * H_TO_KCAL_MOL * 0.5
