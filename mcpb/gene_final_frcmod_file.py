@@ -302,6 +302,93 @@ def gene_by_empirical_way(scpdbf, ionids, stfpf, pref, finf):
 
 #-----------------------------------------------------------------------------
 
+def get_bond_fc_with_sem(crds, fcmatrix, nat1, nat2):
+
+    crd1 = crds[3*nat1-3:3*nat1]
+    crd2 = crds[3*nat2-3:3*nat2]
+    disbohr = calc_bond(crd1, crd2) #unit is bohr
+
+    vec12 = array(crd2) - array(crd1) #vec12 is vec2 - vec1
+    vec12 = [i/(disbohr) for i in vec12]
+    vec12 = array(vec12)
+
+    dis = disbohr * B_TO_A #Transfer bohr to angstrom
+
+    #bond force constant matrix, size 3 * 3
+    bfcmatrix = array([[float(0) for x in range(3)] for x in range(3)])
+
+    for i in range(0, 3):
+      for j in range(0, 3):
+        bfcmatrix[i][j] = -fcmatrix[3*(nat1-1)+i][3*(nat2-1)+j]
+
+    eigval, eigvector = eig(bfcmatrix)
+
+    fc = 0.0
+
+    for i in range(0, 3):
+      ev = eigvector[:,i]
+      fc = fc + eigval[i] * abs(dot(ev, vec12))
+
+    fcfinal = fc * HB2_TO_KCAL_MOL_A2 * 0.5
+    #Hatree/(Bohr^2) to kcal/(mol*angstrom^2)
+    #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
+    return dis, fcfinal
+
+def get_ang_fc_with_sem(crds, fcmatrix, nat1, nat2, nat3):
+
+    #get the angle value
+    crd1 = crds[3*nat1-3:3*nat1]
+    crd2 = crds[3*nat2-3:3*nat2]
+    crd3 = crds[3*nat3-3:3*nat3]
+    dis12 = calc_bond(crd1, crd2) #unit is bohr
+    dis32 = calc_bond(crd3, crd2) #unit is bohr
+
+    #get the unit vector
+    vec12 = array(crd2) - array(crd1) #vec12 is vec2 - vec1
+    vec32 = array(crd2) - array(crd3)
+    vec12 = array([i/dis12 for i in vec12])
+    vec32 = array([i/dis32 for i in vec32])
+
+    angval = calc_angle(crd1, crd2, crd3)
+
+    #get the normalized vector
+    vecUNp = cross(vec32, vec12)
+    vecUN = array([i/norm(vecUNp) for i in vecUNp])
+
+    vecPA = cross(vecUN, vec12)
+    vecPC = cross(vec32, vecUN)
+
+    afcmatrix12 = array([[float(0) for x in range(3)] for x in range(3)])
+    afcmatrix32 = array([[float(0) for x in range(3)] for x in range(3)])
+
+    for i in range(0, 3):
+      for j in range(0, 3):
+        afcmatrix12[i][j] = -fcmatrix[3*(nat1-1)+i][3*(nat2-1)+j]
+
+    for i in range(0, 3):
+      for j in range(0, 3):
+        afcmatrix32[i][j] = -fcmatrix[3*(nat3-1)+i][3*(nat2-1)+j]
+
+    eigval12, eigvector12 = eig(afcmatrix12)
+    eigval32, eigvector32 = eig(afcmatrix32)
+
+    contri12 = 0.0
+    contri32 = 0.0
+
+    for i in range(0, 3):
+      ev12 = eigvector12[:,i]
+      ev32 = eigvector32[:,i]
+      contri12 = contri12 + eigval12[i] * abs(dot(vecPA, ev12))
+      contri32 = contri32 + eigval32[i] * abs(dot(vecPC, ev32))
+
+    contri12 = 1.0 / (contri12 * dis12 * dis12)
+    contri32 = 1.0 / (contri32 * dis32 * dis32)
+
+    fcfinal = (1.0 / (contri12 + contri32)) * H_TO_KCAL_MOL * 0.5
+    #Hatree to kcal/mol
+    #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
+    return angval, fcfinal
+
 def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
                            logfile, g0x):
 
@@ -348,35 +435,10 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
         bondtyp = (attypdict[at1], attypdict[at2])
         "The unit in fchk file is a.u. so the distance is in Bohr."
         if bondtyp == misbond or bondtyp[::-1] == misbond:
-          crd1 = crds[3*natids[at1]-3:3*natids[at1]]
-          crd2 = crds[3*natids[at2]-3:3*natids[at2]]
-          disbohr = calc_bond(crd1, crd2) #unit is bohr
-
-          vec12 = array(crd2) - array(crd1) #vec12 is vec2 - vec1
-          vec12 = [i/(disbohr) for i in vec12]
-          vec12 = array(vec12)
-
-          dis = disbohr * B_TO_A #Transfer bohr to angstrom
+          nat1 = natids[at1]
+          nat2 = natids[at2]
+          dis, fcfinal = get_bond_fc_with_sem(crds, fcmatrix, nat1, nat2)
           bondlen.append(dis)
-
-          #bond force constant matrix, size 3 * 3
-          bfcmatrix = array([[float(0) for x in range(3)] for x in range(3)])
-
-          for i in range(0, 3):
-            for j in range(0, 3):
-              bfcmatrix[i][j] = -fcmatrix[3*(natids[at1]-1)+i][3*(natids[at2]-1)+j]
-
-          eigval, eigvector = eig(bfcmatrix)
-
-          fc = 0.0
-
-          for i in range(0, 3):
-            ev = eigvector[:,i]
-            fc = fc + eigval[i] * abs(dot(ev, vec12))
-
-          fcfinal = fc * HB2_TO_KCAL_MOL_A2 * 0.5
-          #Hatree/(Bohr^2) to kcal/(mol*angstrom^2)
-          #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
           bfconst.append(fcfinal)
 
       #Get average bond parameters
@@ -397,59 +459,11 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
         angtyp = (attypdict[at1], attypdict[at2], attypdict[at3])
 
         if angtyp == misang or angtyp[::-1] == misang:
-
-          #get the angle value
-          crd1 = crds[3*natids[at1]-3:3*natids[at1]]
-          crd2 = crds[3*natids[at2]-3:3*natids[at2]]
-          crd3 = crds[3*natids[at3]-3:3*natids[at3]]
-          dis12 = calc_bond(crd1, crd2) #unit is bohr
-          dis32 = calc_bond(crd3, crd2) #unit is bohr
-
-          #get the unit vector 
-          vec12 = array(crd2) - array(crd1) #vec12 is vec2 - vec1
-          vec32 = array(crd2) - array(crd3)
-          vec12 = array([i/dis12 for i in vec12])
-          vec32 = array([i/dis32 for i in vec32])
-
-          angval = calc_angle(crd1, crd2, crd3)
+          nat1 = natids[at1]
+          nat2 = natids[at2]
+          nat3 = natids[at3]
+          angval, fcfinal = get_ang_fc_with_sem(crds, fcmatrix, nat1, nat2, nat3)
           angvals.append(angval)
-
-          #get the normalized vector
-          vecUNp = cross(vec32, vec12)
-          vecUN = array([i/norm(vecUNp) for i in vecUNp])
-
-          vecPA = cross(vecUN, vec12)
-          vecPC = cross(vec32, vecUN)
-
-          afcmatrix12 = array([[float(0) for x in range(3)] for x in range(3)])
-          afcmatrix32 = array([[float(0) for x in range(3)] for x in range(3)])
-
-          for i in range(0, 3):
-            for j in range(0, 3):
-              afcmatrix12[i][j] = -fcmatrix[3*(natids[at1]-1)+i][3*(natids[at2]-1)+j]
-
-          for i in range(0, 3):
-            for j in range(0, 3):
-              afcmatrix32[i][j] = -fcmatrix[3*(natids[at3]-1)+i][3*(natids[at2]-1)+j]
-
-          eigval12, eigvector12 = eig(afcmatrix12)
-          eigval32, eigvector32 = eig(afcmatrix32)
-
-          contri12 = 0.0
-          contri32 = 0.0
-
-          for i in range(0, 3):
-            ev12 = eigvector12[:,i]
-            ev32 = eigvector32[:,i]
-            contri12 = contri12 + eigval12[i] * abs(dot(vecPA, ev12))
-            contri32 = contri32 + eigval32[i] * abs(dot(vecPC, ev32))
-
-          contri12 = 1.0 / (contri12 * dis12 * dis12)
-          contri32 = 1.0 / (contri32 * dis32 * dis32)
-
-          fcfinal = (1.0 / (contri12 + contri32)) * H_TO_KCAL_MOL * 0.5
-          #Hatree to kcal/mol
-          #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
           afconst.append(fcfinal)
 
       #Get average angle parameters
