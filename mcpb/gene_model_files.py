@@ -1330,10 +1330,10 @@ def build_standard_model(mol, reslist, cutoff, msresids, outf, ionids,
             if (j == bdedatms[k]) and (k < 9):
               k4 = k + 1
               attype2 = 'Y' + str(k4)
-            elif (j == bdedatms[k]) and (k >= 9):
+            elif (j == bdedatms[k]) and (k >= 9) and (k < 18):
               k5 = k - 9 + 1
               attype2 = 'Z' + str(k5)
-            elif (j == bdedatms[k]) and (k >= 18):
+            elif (j == bdedatms[k]) and (k >= 18) and (k < 27):
               k6 = k - 18 + 1
               attype2 = 'A' + str(k6)
             elif (j == bdedatms[k]) and (k >= 27):

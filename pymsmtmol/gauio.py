@@ -391,14 +391,14 @@ def get_esp_from_gau(logfile, espfile):
     for line in fp:
         if ln >= bln:
             if '      Atomic Center' in line:
-                line = line.strip('\n')
-                line = line.split()
-                crd = (float(line[-3])/B_TO_A, float(line[-2])/B_TO_A, float(line[-1])/B_TO_A)
+                #line = line.strip('\n')
+                #line = line.split()
+                crd = (float(line[32:42])/B_TO_A, float(line[42:52])/B_TO_A, float(line[52:62])/B_TO_A)
                 crdl1.append(crd)
             elif ('     ESP Fit Center' in line):
-                line = line.strip('\n')
-                line = line.split()
-                crd = (float(line[-3])/B_TO_A, float(line[-2])/B_TO_A, float(line[-1])/B_TO_A)
+                #line = line.strip('\n')
+                #line = line.split()
+                crd = (float(line[32:42])/B_TO_A, float(line[42:52])/B_TO_A, float(line[52:62])/B_TO_A)
                 crdl2.append(crd)
         ln = ln + 1
     fp.close()
