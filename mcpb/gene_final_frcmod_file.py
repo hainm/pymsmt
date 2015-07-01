@@ -399,19 +399,14 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
     alist = get_alist(mol, blist)   
 
     #crds after optimization
-    if g0x == 'g03':
-      crds = get_crds_from_fchk(chkfname, 'Current cartesian coordinates',
-                                'Int Atom Types')
-    elif g0x == 'g09':
-      crds = get_crds_from_fchk(chkfname, 'Current cartesian coordinates',
-                                'Force Field')
+    if g0x in ['g03', 'g09']:
+      crds = get_crds_from_fchk(chkfname, len(atids))
     elif g0x == 'gms':
       crds = get_crds_from_gms(logfile)
 
     #Whole Hessian Matrix
     if g0x in ['g03', 'g09']:
-      fcmatrix = get_matrix_from_fchk(chkfname, 'Cartesian Force Constants',
-                                    'Dipole Moment', 3*len(atids))
+      fcmatrix = get_matrix_from_fchk(chkfname, 3*len(atids))
     elif g0x == 'gms':
       fcmatrix = get_matrix_from_gms(logfile, 3*len(atids))
 

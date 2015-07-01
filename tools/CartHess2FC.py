@@ -31,19 +31,14 @@ for i in range(0, len(atids)):
   natids[atids[i]] = i + 1
 
 #crds after optimization
-if options.softversion == 'g03':
-    crds = get_crds_from_fchk(options.hessfile, 'Current cartesian coordinates',
-                            'Int Atom Types')
-elif options.softversion == 'g09':
-    crds = get_crds_from_fchk(options.hessfile, 'Current cartesian coordinates',
-                            'Force Field')
+if options.softversion in ['g03', 'g09']:
+    crds = get_crds_from_fchk(options.hessfile, len(atids))
 elif options.softversion == 'gms':
     crds = get_crds_from_gms(options.hessfile)
 
 #Whole Hessian Matrix
 if options.softversion in ['g03', 'g09']:
-    fcmatrix = get_matrix_from_fchk(options.hessfile, 'Cartesian Force Constants',
-                                'Dipole Moment', 3*len(atids))
+    fcmatrix = get_matrix_from_fchk(options.hessfile, 3*len(atids))
 elif options.softversion == 'gms':
     fcmatrix = get_matrix_from_gms(options.hessfile, 3*len(atids))
 

@@ -2,8 +2,11 @@
 Module for writting a Gaussian file and read the coordinates and force
 constants from Gaussian output file.
 """
+from __future__ import absolute_import
 import numpy
-from constants import B_TO_A
+import linecache
+from pymsmtexp import *
+from pymsmtmol.constants import B_TO_A
 from chemistry.periodic_table import AtomicNum
 
 #------------------------------------------------------------------------------
@@ -176,77 +179,82 @@ def write_gau_mkf(outf, gmkf, lgchg, SpinNum, gatms, ionnames, chargedict,
 #-----------------------Read info from Gaussian output file--------------------
 #------------------------------------------------------------------------------
 
-def get_crds_from_fchk(fname, bstring, estring):
+def get_crds_from_fchk(fname, atnums):
 
     #fchk file uses Bohr unit
-
     crds = []
 
-    bl = len(bstring)
-    blc = 0
-
-    el = len(estring)
-    elc = 0
-
+    crdnums = atnums * 3
     fp = open(fname, 'r')
     i = 1
     for line in fp:
-      if (bstring in line) and (blc == 0):
-        beginl = i
-        blc = blc + 1
-      elif (estring in line) and (elc == 0):
-        endl = i
-        elc = elc + 1
+      if 'Current cartesian coordinates' in line:
+        beginl = i + 1
+        line = line.strip('\n')
+        line = line.split()
+        crdnums2 = int(line[-1])
       i = i + 1
     fp.close()
 
-    fp1 = open(fname, 'r')
-    i = 1
-    for line in fp1:
-      if (i > beginl) and (i < endl):
-        crd = line.split()
-        for j in crd:
-          if j != ' ':
-            crds.append(float(j))
-      i = i + 1
-    fp1.close()
+    if crdnums == crdnums2:
+      pass
+    else:
+       raise pymsmtError('The coordinates number in fchk file are not consistent '
+                        'with the atom number.')
 
+    if crdnums%5 == 0:
+      endl = crdnums//5 + beginl - 1
+    else:
+      endl = crdnums//5 + beginl
+
+    for i in range(beginl, endl+1):
+      line = linecache.getline(fname, i)
+      line = line.strip('\n')
+      crd = line.split()
+      for j in crd:
+        if j != ' ':
+          crds.append(float(j))
+
+    linecache.clearcache()
     return crds
 
-def get_matrix_from_fchk(fname, bstring, estring, msize):
+def get_matrix_from_fchk(fname, msize):
 
     crds = []
 
-    bl = len(bstring)
-    blc = 0
-
-    el = len(estring)
-    elc = 0
+    elenums = msize * (msize + 1)/2
 
     fp = open(fname, 'r')
     i = 1
     for line in fp:
-      if (bstring in line) and (blc == 0):
-        beginl = i
-        blc = blc + 1
-      elif (estring in line) and (elc == 0):
-        endl = i
-        elc = elc + 1
+      if 'Cartesian Force Constants' in line:
+        beginl = i + 1
+        line = line.strip('\n')
+        line = line.split()
+        elenums2 = int(line[-1])
       i = i + 1
     fp.close()
+
+    if elenums == elenums2:
+      pass
+    else:
+      raise pymsmtError('The atom number is not consistent with the'
+                       'matrix size in fchk file.')
+
+    if elenums%5 == 0:
+      endl = beginl + elenums//5 - 1
+    else:
+      endl = beginl + elenums//5
 
     fcmatrix = numpy.array([[float(0) for x in range(msize)] for x in range(msize)])
 
-    fp1 = open(fname, 'r')
-    i = 1
-    for line in fp1:
-      if (i > beginl) and (i < endl):
-        crd = line.split()
-        for j in crd:
-          if j != ' ':
-            crds.append(float(j))
-      i = i + 1
-    fp1.close()
+    for i in range(beginl, endl+1):
+      line = linecache.getline(fname, i)
+      line = line.strip('\n')
+      crd = line.split()
+      for j in crd:
+        if j != ' ':
+          crds.append(float(j))
 
     i = 0
     for j in range(0, msize):
@@ -255,6 +263,7 @@ def get_matrix_from_fchk(fname, bstring, estring, msize):
         fcmatrix[k][j] = crds[i]
         i = i + 1
 
+    linecache.clearcache()
     return fcmatrix
 
 def get_crds_from_log(logfname, g0x):
@@ -447,5 +456,5 @@ def get_esp_from_gau(logfile, espfile):
             print >> w_espf, "%16.7E %15.7E %15.7E %15.7E" %(esp, crd[0], crd[1], crd[2])
         w_espf.close()
     else:
-        raise ValueError("The length of coordinates and ESP charges are different!")
+        raise pymsmtError("The length of coordinates and ESP charges are different!")
 
