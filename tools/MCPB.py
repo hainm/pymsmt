@@ -47,7 +47,7 @@ from mcpb.gene_model_files import get_ms_resnames, gene_model_files
 from mcpb.resp_fitting import resp_fitting
 from mcpb.gene_pre_frcmod_file import gene_pre_frcmod_file
 from mcpb.gene_final_frcmod_file import (gene_by_empirical_way,
-            gene_by_QM_fitting_sem, gene_by_QM_fitting_zmatrix)
+          gene_by_QM_fitting_sem, gene_by_QM_fitting_zmatrix)
 from mcpb.amber_modeling import gene_leaprc
 from mcpb.title import print_title
 from pymsmtmol.element import resnamel
@@ -94,6 +94,9 @@ watermodel = 'tip3p'
 paraset = 'cm'
 scchg = -99
 lgchg = -99
+scalef = 1.000
+bondfc_avg = 0
+anglefc_avg = 0
 
 if options.step not in ['1', '1n', '1m', '1a', '2', '2e', '2s', '2z',
                         '3', '3a', '3b', '3c', '3d', '4', '4b', '4n1',
@@ -339,6 +342,54 @@ for line in inputf:
         else:
             warnings.warn('No frcmod files is provided for '
                           'frcmod_files.', pymsmtWarning)
+    #scale_factor
+    elif line[0].lower() == 'scale_factor':
+        if len(line) == 2:
+            try:
+                scalef = float(line[1])
+            except:
+                raise pymsmtError('Please provide an float number for the '
+                                  'scale_factor parameter.')
+        elif len(line) == 1:
+            warnings.warn('No scale_factor parameter provided, Default value '
+                          '%5.1f is used.' %scalef, pymsmtWarning)
+        else:
+            raise pymsmtError('More than one scale_factor values are provided, '
+                              'need one.')
+    #bondfc_avg
+    elif line[0].lower() == 'bondfc_avg':
+        if len(line) == 2:
+            try:
+                bondfc_avg = int(line[1])
+                if bondfc_avg not in [0, 1]:
+                    raise pymsmtError('bondfc_avg varible needs to be 0 or 1, '
+                                      '0 means not using, 1 means using.')
+            except:
+                raise pymsmtError('bondfc_avg value is not integer value.')
+        elif len(line) == 1:
+            warnings.warn('No bondfc_avg parameter provided. '
+                          'Default value %d is used.'
+                          %bondfc_avg, pymsmtWarning)
+        else:
+            raise pymsmtError('More than one bondfc_avg parameter provided, '
+                              'need one.')
+    #anglefc_avg
+    elif line[0].lower() == 'anglefc_avg':
+        if len(line) == 2:
+            try:
+                anglefc_avg = int(line[1])
+                if anglefc_avg not in [0, 1]:
+                    raise pymsmtError('anglefc_avg varible needs to be 0 or 1, '
+                                      '0 means not using, 1 means using.')
+            except:
+                raise pymsmtError('anglefc_avg value is not integer value.')
+        elif len(line) == 1:
+            warnings.warn('No anglefc_avg parameter provided. '
+                          'Default value %d is used.'
+                          %anglefc_avg, pymsmtWarning)
+        else:
+            raise pymsmtError('More than one anglefc_avg parameter provided, '
+                              'need one.')
     #watermodel
     elif line[0].lower() == 'water_model':
         if len(line) == 2:
@@ -404,6 +455,11 @@ print 'The variable large_opt is : ', largeopt
 print 'The variable force_field is : ', ff_choice
 print 'The variable gaff is : ', gaff
 print 'The variable frcmodfs is : ', frcmodfs
+print 'The variable scale_factor is : ', scalef
+print '             Attention: The force constants will be scaled by '
+print '             multiplying the square of scale_factor.'
+print 'The variable bondfc_avg is : ', bondfc_avg
+print 'The variable anglefc_avg is : ', anglefc_avg
 print 'The variable naa_mol2files is : ', naamol2fs
 print 'The variable software_version is : ', g0x
 print 'The variable water_model is : ', watermodel.upper()
@@ -473,16 +529,13 @@ ileapf = gname + '_tleap.in'
 #1m) Just rename the metal ion to the AMBER ion atom type style
 #1a) Default. Automatically rename the atom type of the atoms in the metal
 #    complex.
-if (options.step == '1'):
-    gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
-                     watermodel, 2, largeopt, sqmopt, scchg, lgchg)
-elif (options.step == '1n'):
+if (options.step == '1n'):
     gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
                      watermodel, 0, largeopt, sqmopt, scchg, lgchg)
 elif (options.step == '1m'):
     gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
                      watermodel, 1, largeopt, sqmopt, scchg, lgchg)
-elif (options.step == '1a'):
+elif (options.step in ['1', '1a']): #Default
     gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
                      watermodel, 2, largeopt, sqmopt, scchg, lgchg)
 #==============================================================================
@@ -495,24 +548,20 @@ elif (options.step == '1a'):
 #2e) Empirical method developed by Pengfei Li and co-workers in Merz group
 #2s) Default. Seminario method developed by Seminario in 1990s
 #2z) Z-matrix method
-elif (options.step == '2'): #Default
-    gene_pre_frcmod_file(ionids, premol2fs, stpdbf, stfpf, prefcdf, ff_choice,
-                         gaff, frcmodfs, watermodel)
-    gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, prefcdf, finfcdf, fcfchkf,
-                         fclogf, g0x)
 elif (options.step == '2e'):
     gene_pre_frcmod_file(ionids, premol2fs, stpdbf, stfpf, prefcdf, ff_choice,
                          gaff, frcmodfs, watermodel)
     gene_by_empirical_way(scpdbf, ionids, stfpf, prefcdf, finfcdf)
-elif (options.step == '2s'):
+elif (options.step in ['2', '2s']): #Default
     gene_pre_frcmod_file(ionids, premol2fs, stpdbf, stfpf, prefcdf, ff_choice,
                          gaff, frcmodfs, watermodel)
     gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, prefcdf, finfcdf, fcfchkf,
-                         fclogf, g0x)
+                         fclogf, g0x, scalef, bondfc_avg, anglefc_avg)
 elif (options.step == '2z'):
     gene_pre_frcmod_file(ionids, premol2fs, stpdbf, stfpf, prefcdf, ff_choice,
                          gaff, frcmodfs, watermodel)
-    gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, prefcdf, finfcdf, fclogf)
+    gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, prefcdf, finfcdf, \
+                               fclogf, scalef)
 #==============================================================================
 # Step 3 Doing the RESP charge fitting and generate the mol2 files
 #==============================================================================
@@ -524,13 +573,10 @@ elif (options.step == '2z'):
 #    chosen
 #3d) Restrains the charges of backbone atoms and CB atom in the sidechain
 #    according to force field chosen
-elif (options.step == '3'): #Default
-    resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
-                 premol2fs, mcresname, 1, chgfix_resids, g0x, lgchg)
 elif (options.step == '3a'):
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
                  premol2fs, mcresname, 0, chgfix_resids, g0x, lgchg)
-elif (options.step == '3b'):
+elif (options.step in ['3', '3b']): #Default
     resp_fitting(stpdbf, lgpdbf, stfpf, lgfpf, mklogf, ionids, ff_choice,
                  premol2fs, mcresname, 1, chgfix_resids, g0x, lgchg)
 elif (options.step == '3c'):
@@ -546,11 +592,7 @@ elif (options.step == '3d'):
 #4b) Default. Bonded model
 #4n1) Nonbonded model with refitting the charge in the protein complex
 #4n2) Normal Nonbonded model (12-6 nonbonded model) without re-fitting charges
-elif (options.step == '4'): #Default
-    gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids, ionmol2fs,
-                ioninfo, mcresname, naamol2fs, ff_choice, frcmodfs, finfcdf,
-                ileapf, 1, watermodel, paraset)
-elif (options.step == '4b'): #bonded model
+elif (options.step in ['4', '4b']): #bonded model, Default
     gene_leaprc(gname, orpdbf, fipdbf, stpdbf, stfpf, ionids, ionmol2fs,
                 ioninfo, mcresname, naamol2fs, ff_choice, frcmodfs, finfcdf,
                 ileapf, 1, watermodel, paraset)

@@ -102,7 +102,7 @@ def get_all_list(mol, blist, atids, cutoff):
 
 
   ###4. Improper torsion list
-  ilist = []
+  ilist = [] #Second is the centeral atom
   for i in range(0, len(alist)):
     ati1 = alist[i][0]
     ati2 = alist[i][1]
@@ -125,7 +125,7 @@ def get_all_list(mol, blist, atids, cutoff):
         impats = (at1, at2, at3, at4)
         ilist.append(impats)
 
-  ilist2 = []
+  ilist2 = [] #Third is the centeral atoms
   for imp in ilist:
     imp1 = (imp[0], imp[1], imp[2], imp[3])
     imp2 = (imp[0], imp[3], imp[2], imp[1])

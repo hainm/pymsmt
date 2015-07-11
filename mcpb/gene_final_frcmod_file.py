@@ -18,12 +18,12 @@ from pymsmtmol.getlist import get_alist, get_mc_blist
 from pymsmtmol.gauio import (get_crds_from_fchk, get_matrix_from_fchk,
                              get_fc_from_log)
 from pymsmtmol.gmsio import get_crds_from_gms, get_matrix_from_gms
-from pymsmtmol.cal import calc_bond, calc_angle
+from pymsmtmol.cal import calc_bond, calc_angle, calc_dih
 from pymsmtmol.element import ionnamel
 from pymsmtmol.constants import *
 from pymsmtlib.lib import getfc
 from pymsmtexp import *
-from numpy import average, array, dot, cross
+from numpy import average, array, dot, cross, std
 from numpy.linalg import eigvals, eig, norm
 import math
 
@@ -302,39 +302,58 @@ def gene_by_empirical_way(scpdbf, ionids, stfpf, pref, finf):
 
 #-----------------------------------------------------------------------------
 
-def get_bond_fc_with_sem(crds, fcmatrix, nat1, nat2):
+def get_bond_fc_with_sem(crds, fcmatrix, nat1, nat2, scalef, bondavg):
 
     crd1 = crds[3*nat1-3:3*nat1]
     crd2 = crds[3*nat2-3:3*nat2]
     disbohr = calc_bond(crd1, crd2) #unit is bohr
+    dis = disbohr * B_TO_A #Transfer bohr to angstrom
 
     vec12 = array(crd2) - array(crd1) #vec12 is vec2 - vec1
     vec12 = [i/(disbohr) for i in vec12]
     vec12 = array(vec12)
-
-    dis = disbohr * B_TO_A #Transfer bohr to angstrom
-
+ 
     #bond force constant matrix, size 3 * 3
     bfcmatrix = array([[float(0) for x in range(3)] for x in range(3)])
-
+   
+    #1. First way to chose the matrix-----------------
     for i in range(0, 3):
       for j in range(0, 3):
         bfcmatrix[i][j] = -fcmatrix[3*(nat1-1)+i][3*(nat2-1)+j]
-
     eigval, eigvector = eig(bfcmatrix)
-
     fc = 0.0
-
     for i in range(0, 3):
       ev = eigvector[:,i]
       fc = fc + eigval[i] * abs(dot(ev, vec12))
+    fcfinal1 = fc * HB2_TO_KCAL_MOL_A2 * 0.5
 
-    fcfinal = fc * HB2_TO_KCAL_MOL_A2 * 0.5
-    #Hatree/(Bohr^2) to kcal/(mol*angstrom^2)
-    #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
-    return dis, fcfinal
+    if bondavg == 1:
+      #2. Second way to chose the matrix-----------------
+      for i in range(0, 3):
+        for j in range(0, 3):
+          bfcmatrix[i][j] = -fcmatrix[3*(nat2-1)+i][3*(nat1-1)+j]
+      eigval, eigvector = eig(bfcmatrix)
+      fc = 0.0
+      for i in range(0, 3):
+        ev = eigvector[:,i]
+        fc = fc + eigval[i] * abs(dot(ev, vec12))
+      fcfinal2 = fc * HB2_TO_KCAL_MOL_A2 * 0.5
 
-def get_ang_fc_with_sem(crds, fcmatrix, nat1, nat2, nat3):
+      #Hatree/(Bohr^2) to kcal/(mol*angstrom^2)
+      #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
+
+      fcfinal = average([fcfinal1, fcfinal2])
+      stdv = std([fcfinal1, fcfinal2])
+      fcfinal = fcfinal * scalef * scalef
+      stdv = stdv * scalef * scalef
+      return dis, fcfinal, stdv
+
+    elif bondavg == 0:
+
+      fcfinal = fcfinal1 * scalef * scalef
+      return dis, fcfinal
+
+def get_ang_fc_with_sem(crds, fcmatrix, nat1, nat2, nat3, scalef, angavg):
 
     #get the angle value
     crd1 = crds[3*nat1-3:3*nat1]
@@ -353,7 +372,8 @@ def get_ang_fc_with_sem(crds, fcmatrix, nat1, nat2, nat3):
 
     #get the normalized vector
     vecUNp = cross(vec32, vec12)
-    vecUN = array([i/norm(vecUNp) for i in vecUNp])
+    vecUN = array([i/norm(vecUNp) for i in vecUNp]) #vecUN is the vector
+                                     #perpendicular to the plance of ABC
 
     vecPA = cross(vecUN, vec12)
     vecPC = cross(vec32, vecUN)
@@ -361,36 +381,254 @@ def get_ang_fc_with_sem(crds, fcmatrix, nat1, nat2, nat3):
     afcmatrix12 = array([[float(0) for x in range(3)] for x in range(3)])
     afcmatrix32 = array([[float(0) for x in range(3)] for x in range(3)])
 
+    #1. First way to chose the matrix----------------------------------
     for i in range(0, 3):
       for j in range(0, 3):
         afcmatrix12[i][j] = -fcmatrix[3*(nat1-1)+i][3*(nat2-1)+j]
-
     for i in range(0, 3):
       for j in range(0, 3):
         afcmatrix32[i][j] = -fcmatrix[3*(nat3-1)+i][3*(nat2-1)+j]
-
     eigval12, eigvector12 = eig(afcmatrix12)
     eigval32, eigvector32 = eig(afcmatrix32)
-
     contri12 = 0.0
     contri32 = 0.0
-
     for i in range(0, 3):
       ev12 = eigvector12[:,i]
       ev32 = eigvector32[:,i]
       contri12 = contri12 + eigval12[i] * abs(dot(vecPA, ev12))
       contri32 = contri32 + eigval32[i] * abs(dot(vecPC, ev32))
-
     contri12 = 1.0 / (contri12 * dis12 * dis12)
     contri32 = 1.0 / (contri32 * dis32 * dis32)
+    fcfinal1 = (1.0 / (contri12 + contri32)) * H_TO_KCAL_MOL * 0.5
 
-    fcfinal = (1.0 / (contri12 + contri32)) * H_TO_KCAL_MOL * 0.5
-    #Hatree to kcal/mol
-    #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
-    return angval, fcfinal
+    if angavg == 1:
+      #2. Second way to chose the matrix----------------------------------
+      for i in range(0, 3):
+        for j in range(0, 3):
+          afcmatrix12[i][j] = -fcmatrix[3*(nat2-1)+i][3*(nat1-1)+j]
+      for i in range(0, 3):
+        for j in range(0, 3):
+          afcmatrix32[i][j] = -fcmatrix[3*(nat3-1)+i][3*(nat2-1)+j]
+      eigval12, eigvector12 = eig(afcmatrix12)
+      eigval32, eigvector32 = eig(afcmatrix32)
+      contri12 = 0.0
+      contri32 = 0.0
+      for i in range(0, 3):
+        ev12 = eigvector12[:,i]
+        ev32 = eigvector32[:,i]
+        contri12 = contri12 + eigval12[i] * abs(dot(vecPA, ev12))
+        contri32 = contri32 + eigval32[i] * abs(dot(vecPC, ev32))
+      contri12 = 1.0 / (contri12 * dis12 * dis12)
+      contri32 = 1.0 / (contri32 * dis32 * dis32)
+      fcfinal2 = (1.0 / (contri12 + contri32)) * H_TO_KCAL_MOL * 0.5
+ 
+      #Hatree to kcal/mol
+      #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
+ 
+      #3. Third way to chose the matrix----------------------------------
+      for i in range(0, 3):
+        for j in range(0, 3):
+          afcmatrix12[i][j] = -fcmatrix[3*(nat1-1)+i][3*(nat2-1)+j]
+      for i in range(0, 3):
+        for j in range(0, 3):
+          afcmatrix32[i][j] = -fcmatrix[3*(nat2-1)+i][3*(nat3-1)+j]
+      eigval12, eigvector12 = eig(afcmatrix12)
+      eigval32, eigvector32 = eig(afcmatrix32)
+      contri12 = 0.0
+      contri32 = 0.0
+      for i in range(0, 3):
+        ev12 = eigvector12[:,i]
+        ev32 = eigvector32[:,i]
+        contri12 = contri12 + eigval12[i] * abs(dot(vecPA, ev12))
+        contri32 = contri32 + eigval32[i] * abs(dot(vecPC, ev32))
+      contri12 = 1.0 / (contri12 * dis12 * dis12)
+      contri32 = 1.0 / (contri32 * dis32 * dis32)
+      fcfinal3 = (1.0 / (contri12 + contri32)) * H_TO_KCAL_MOL * 0.5
+
+      #4. Fourth way to chose the matrix----------------------------------
+      for i in range(0, 3):
+        for j in range(0, 3):
+          afcmatrix12[i][j] = -fcmatrix[3*(nat2-1)+i][3*(nat1-1)+j]
+      for i in range(0, 3):
+        for j in range(0, 3):
+          afcmatrix32[i][j] = -fcmatrix[3*(nat2-1)+i][3*(nat3-1)+j]
+      eigval12, eigvector12 = eig(afcmatrix12)
+      eigval32, eigvector32 = eig(afcmatrix32)
+      contri12 = 0.0
+      contri32 = 0.0
+      for i in range(0, 3):
+        ev12 = eigvector12[:,i]
+        ev32 = eigvector32[:,i]
+        contri12 = contri12 + eigval12[i] * abs(dot(vecPA, ev12))
+        contri32 = contri32 + eigval32[i] * abs(dot(vecPC, ev32))
+      contri12 = 1.0 / (contri12 * dis12 * dis12)
+      contri32 = 1.0 / (contri32 * dis32 * dis32)
+      fcfinal4 = (1.0 / (contri12 + contri32)) * H_TO_KCAL_MOL * 0.5
+ 
+      fcfinal = average([fcfinal1, fcfinal2, fcfinal3, fcfinal4])
+      stdv = std([fcfinal1, fcfinal2, fcfinal3, fcfinal4])
+      fcfinal = fcfinal * scalef * scalef
+      stdv = stdv * scalef * scalef
+      return angval, fcfinal, stdv
+
+    elif angavg == 0:
+      fcfinal = fcfinal1 * scalef * scalef
+      return angval, fcfinal
+
+def get_dih_fc_with_sem(crds, fcmatrix, nat1, nat2, nat3, nat4, n1, n2, scalef):
+
+    crd1 = crds[3*nat1-3:3*nat1]
+    crd2 = crds[3*nat2-3:3*nat2]
+    crd3 = crds[3*nat3-3:3*nat3]
+    crd4 = crds[3*nat4-3:3*nat4]
+
+    dihval = calc_dih(crd1, crd2, crd3, crd4)
+
+    dis12 = calc_bond(crd1, crd2) #unit is bohr
+    dis23 = calc_bond(crd2, crd3) #unit is bohr
+    dis34 = calc_bond(crd3, crd4) #unit is bohr
+
+    #get the unit vector
+    vec12 = array(crd2) - array(crd1) #vec12 is vec2 - vec1
+    vec21 = - vec12
+    vec23 = array(crd3) - array(crd2)
+    vec32 = - vec23
+    vec34 = array(crd4) - array(crd3)
+    vec43 = - vec34
+
+    vec12 = array([i/dis12 for i in vec12])
+    vec21 = array([i/dis12 for i in vec21])
+    vec23 = array([i/dis23 for i in vec23])
+    vec32 = array([i/dis23 for i in vec32])
+    vec34 = array([i/dis34 for i in vec34])
+    vec43 = array([i/dis34 for i in vec43])
+
+    #get the normalized vector
+    vecUNABCp = cross(vec32, vec12)
+    vecUNABC = array([i/norm(vecUNABCp) for i in vecUNABCp])
+
+    vecUNBCDp = cross(vec43, vec23)
+    vecUNBCD = array([i/norm(vecUNBCDp) for i in vecUNBCDp])
+
+    afcmatrix12 = array([[float(0) for x in range(3)] for x in range(3)])
+    afcmatrix43 = array([[float(0) for x in range(3)] for x in range(3)])
+    for i in range(0, 3):
+      for j in range(0, 3):
+        afcmatrix12[i][j] = -fcmatrix[3*(nat1-1)+i][3*(nat2-1)+j]
+    for i in range(0, 3):
+      for j in range(0, 3):
+        afcmatrix43[i][j] = -fcmatrix[3*(nat4-1)+i][3*(nat3-1)+j]
+    eigval12, eigvector12 = eig(afcmatrix12)
+    eigval43, eigvector43 = eig(afcmatrix43)
+
+    contri12 = 0.0
+    contri34 = 0.0
+    for i in range(0, 3):
+      ev12 = eigvector12[:,i]
+      ev43 = eigvector43[:,i]
+      contri12 = contri12 + eigval12[i] * abs(dot(vecUNABC, ev12))
+      contri34 = contri34 + eigval43[i] * abs(dot(vecUNBCD, ev43))
+
+    contri12 = contri12 * (norm(cross(vec12, vec23)) ** 2)
+    contri34 = contri34 * (norm(cross(vec23, vec34)) ** 2)
+    contri12 = 1.0 / (contri12 * dis12 * dis12)
+    contri34 = 1.0 / (contri34 * dis34 * dis34)
+
+    fcfinal1 = (1.0 / (contri12 + contri34)) * H_TO_KCAL_MOL * 0.5 #/ (math.degrees(1.0)**2)
+
+    fcfinal = fcfinal1 * (math.radians(180.0/float(n2))) **2 / (float(n1) * float(n2))
+
+    fcfinal = fcfinal * scalef * scalef
+
+    return dihval, fcfinal1, fcfinal
+
+def get_imp_fc_with_sem(crds, fcmatrix, nat1, nat2, nat3, nat4, scalef):
+
+    crd1 = crds[3*nat1-3:3*nat1]
+    crd2 = crds[3*nat2-3:3*nat2]
+    crd3 = crds[3*nat3-3:3*nat3]
+    crd4 = crds[3*nat4-3:3*nat4]
+
+    dis12 = calc_bond(crd1, crd2) #unit is bohr
+    dis13 = calc_bond(crd1, crd3) #unit is bohr
+    dis23 = calc_bond(crd2, crd3) #unit is bohr
+    dis34 = calc_bond(crd3, crd4) #unit is bohr
+
+    #get the unit vector
+    vec12 = array(crd2) - array(crd1) #vec12 is vec2 - vec1
+    vec21 = - vec12
+    vec23 = array(crd3) - array(crd2)
+    vec32 = - vec23
+    vec34 = array(crd4) - array(crd3)
+    vec43 = - vec34
+
+    vec12 = array([i/dis12 for i in vec12])
+    vec21 = array([i/dis12 for i in vec21])
+    vec23 = array([i/dis23 for i in vec23])
+    vec32 = array([i/dis23 for i in vec32])
+    vec34 = array([i/dis34 for i in vec34])
+    vec43 = array([i/dis34 for i in vec43])
+
+    #get the normalized vector
+    vecUNp = cross(vec43, vec23)
+    vecUN = array([i/norm(vecUNp) for i in vecUNp]) #vecUN is the vector
+                                     #perpendicular to the plance of ABC
+
+    afcmatrix12 = array([[float(0) for x in range(3)] for x in range(3)])
+    afcmatrix13 = array([[float(0) for x in range(3)] for x in range(3)])
+    afcmatrix14 = array([[float(0) for x in range(3)] for x in range(3)])
+    for i in range(0, 3):
+      for j in range(0, 3):
+        afcmatrix12[i][j] = -fcmatrix[3*(nat1-1)+i][3*(nat2-1)+j]
+    for i in range(0, 3):
+      for j in range(0, 3):
+        afcmatrix13[i][j] = -fcmatrix[3*(nat1-1)+i][3*(nat3-1)+j]
+    for i in range(0, 3):
+      for j in range(0, 3):
+        afcmatrix14[i][j] = -fcmatrix[3*(nat1-1)+i][3*(nat4-1)+j]
+
+    eigval12, eigvector12 = eig(afcmatrix12)
+    eigval13, eigvector13 = eig(afcmatrix13)
+    eigval14, eigvector14 = eig(afcmatrix14)
+    contri12 = 0.0
+    contri13 = 0.0
+    contri14 = 0.0
+    for i in range(0, 3):
+      ev12 = eigvector12[:,i]
+      ev13 = eigvector13[:,i]
+      ev14 = eigvector14[:,i]
+      contri12 = contri12 + eigval12[i] * abs(dot(vecUN, ev12))
+      contri13 = contri13 + eigval13[i] * abs(dot(vecUN, ev13))
+      contri14 = contri14 + eigval14[i] * abs(dot(vecUN, ev14))
+
+    kAN = (contri12 + contri13 + contri14) * H_TO_KCAL_MOL * 0.5
+
+    fcfinal1 = kAN/(B_TO_A**2)
+
+    #Get hABCD
+    pval = (dis12 + dis23 + dis13)/2.0
+    sqABC = math.sqrt(pval*(pval-dis12)*(pval-dis23)*(pval-dis13))
+    disAtoBC = sqABC * 2.0 / dis23 #distance between A and BC side, unit is bohr
+
+    #get the normalized vector
+    vecUNABCp = cross(vec32, vec12)
+    vecUNABC = array([i/norm(vecUNABCp) for i in vecUNABCp])
+    vecUNBCDp = cross(vec43, vec23)
+    vecUNBCD = array([i/norm(vecUNBCDp) for i in vecUNBCDp])
+
+    #dihang = math.acos(dot(vecUNABC, vecUNBCD))
+
+    #hABCD = disAtoBC * dot(vecUNABC, vecUNBCD)
+
+    fcfinal = (disAtoBC ** 2) * kAN / 2.0 #H_TO_KCAL_MOL #HB2_TO_KCAL_MOL_A2
+
+    fcfinal1 = fcfinal1 * scalef * scalef
+    fcfinal = fcfinal * scalef * scalef
+
+    return fcfinal1, fcfinal
 
 def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
-                           logfile, g0x):
+                           logfile, g0x, scalef, bondavg, angavg):
 
     print "==================Using the Seminario method to solve the problem."
 
@@ -432,7 +670,16 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
         if bondtyp == misbond or bondtyp[::-1] == misbond:
           nat1 = natids[at1]
           nat2 = natids[at2]
-          dis, fcfinal = get_bond_fc_with_sem(crds, fcmatrix, nat1, nat2)
+
+          if bondavg == 1:
+            dis, fcfinal, stdv = get_bond_fc_with_sem(crds, fcmatrix, nat1, nat2, scalef, bondavg)
+            print '### Bond force constant between ' + \
+              mol.atoms[at1].resname + str(mol.atoms[at1].resid) + '@' + mol.atoms[at1].atname + ' and ' + \
+              mol.atoms[at2].resname + str(mol.atoms[at2].resid) + '@' + mol.atoms[at2].atname + ' : ' + \
+              str(round(fcfinal, 1)) + '±' + str(round(stdv, 1))
+          elif bondavg == 0:
+            dis, fcfinal = get_bond_fc_with_sem(crds, fcmatrix, nat1, nat2, scalef, bondavg)
+
           bondlen.append(dis)
           bfconst.append(fcfinal)
 
@@ -457,7 +704,17 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
           nat1 = natids[at1]
           nat2 = natids[at2]
           nat3 = natids[at3]
-          angval, fcfinal = get_ang_fc_with_sem(crds, fcmatrix, nat1, nat2, nat3)
+
+          if angavg == 1:
+            angval, fcfinal, stdv = get_ang_fc_with_sem(crds, fcmatrix, nat1, nat2, nat3, scalef, angavg)
+            print '### Angle force constant between ' + \
+              mol.atoms[at1].resname + str(mol.atoms[at1].resid) +  '@' + mol.atoms[at1].atname + ', ' + \
+              mol.atoms[at2].resname + str(mol.atoms[at2].resid) +  '@' + mol.atoms[at2].atname + ' and ' + \
+              mol.atoms[at3].resname + str(mol.atoms[at3].resid) +  '@' + mol.atoms[at3].atname + ' : ' + \
+              str(round(fcfinal, 2)) + '±' + str(round(stdv, 2))
+          elif angavg == 0:
+             angval, fcfinal = get_ang_fc_with_sem(crds, fcmatrix, nat1, nat2, nat3, scalef, angavg)
+
           angvals.append(angval)
           afconst.append(fcfinal)
 
@@ -472,7 +729,8 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
 #-----------------------------------------------------------------------------
 ##Z-matrix method: obtain the force constant from the entire Hessian matrix
 #-----------------------------------------------------------------------------
-def gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, pref, finf, logfname):
+def gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, pref, finf, logfname,
+                               scalef):
 
     print "=============Using the Z-matrix method to generate the parameters."
 
@@ -508,6 +766,7 @@ def gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, pref, finf, logfname):
           if bondtyp == misbond or bondtyp[::-1] == misbond:
             dis = vals[i]
             fcfinal = fcs[i] * HB2_TO_KCAL_MOL_A2 * 0.5
+            fcfinal = fcfinal * scalef * scalef
             #Hatree/(Bohr^2) to kcal/(mol*angstrom^2)
             #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
             bondlen.append(dis)
@@ -533,6 +792,7 @@ def gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, pref, finf, logfname):
           if angtyp == misang or angtyp[::-1] == misang:
             angval = vals[i]
             fcfinal = fcs[i] * H_TO_KCAL_MOL * 0.5
+            fcfinal = fcfinal * scalef * scalef
             #Hatree to kcal/mol
             #Times 0.5 factor since AMBER use k(r-r0)^2 but not 1/2*k*(r-r0)^2
             angvals.append(angval)
