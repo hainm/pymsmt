@@ -325,9 +325,12 @@ def get_fc_from_log(logfname):
         val = float(line[2])
         vals.append(val)
         typ = line[0][0]
-        line[1] = line[1].strip(typ)
+
+        line[1] = line[1].lstrip(typ)
+        line[1] = line[1].lstrip('L')
         line[1] = line[1].lstrip('(')
-        line[1] = line[1].strip(')')
+        line[1] = line[1].rstrip(')')
+
         ats = line[1].split(',')
         ats = [int(i) for i in ats]
         sturefs.append(tuple(ats))

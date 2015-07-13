@@ -106,9 +106,9 @@ for i in all_list.dihlist:
     n2 = 0
     for j in all_list.bondlist:
         if (at2, at3, 1) != j and (at3, at2, 1) != j:
-            if at2 in j:
+            if at2 in (j[0], j[1]):
                 n1 = n1 + 1
-            elif at3 in j:
+            elif at3 in (j[0], j[1]):
                 n2 = n2 + 1
 
     nat1 = natids[at1]
