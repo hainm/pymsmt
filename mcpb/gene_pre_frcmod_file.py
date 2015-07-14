@@ -16,8 +16,8 @@ def addspace(atomtype):
 
     #--------------------------------------------------------------------------
 
-def gene_pre_frcmod_file(ionids, naamol2f, stpdbf, stfpf, prefcdf, ffchoice,
-                         gaff, frcmodfs, watermodel):
+def gene_pre_frcmod_file(ionids, naamol2f, stpdbf, stfpf, scresf, prefcdf,
+                         ffchoice, gaff, frcmodfs, watermodel):
 
     print "******************************************************************"
     print "*                                                                *"
@@ -54,7 +54,7 @@ def gene_pre_frcmod_file(ionids, naamol2f, stpdbf, stfpf, prefcdf, ffchoice,
     #get the blist
     blist = get_mc_blist(mol, atids, ionids, stfpf)
 
-    #get_all_the_lists
+    #get_all_the_lists from standard model
     all_list = get_all_list(mol, blist, atids, 10.0)
 
     #atom type dictionary, key is the atom id, value is atom type
@@ -148,6 +148,18 @@ def gene_pre_frcmod_file(ionids, naamol2f, stpdbf, stfpf, prefcdf, ffchoice,
       print >> fmf, 'YES', i[0] + '-' + i[1] + bondparamsdict2[i]
 
     #--------------------------------------------------------------------------
+    coparas = []
+
+    r_scresf = open(scresf, 'r')
+    for line in r_scresf:
+      line = line.strip('\n')
+      line = line.split('-')
+      resid = int(line[1])
+      if ('GLY' in line) or ('KCO' in line) or ('ACE' in line):
+        if resid+1 not in resids:
+          coparas.append(resid)
+    r_scresf.close()
+
     angparamsdict1 = {} #For metal ions
     angparamsdict2 = {} #For the others
     print >> fmf, ' '
@@ -176,6 +188,19 @@ def gene_pre_frcmod_file(ionids, naamol2f, stpdbf, stfpf, prefcdf, ffchoice,
             angparamsdict2[angtyp2] = angparms[angtyp1]
           elif angtyp1[::-1] in angparms.keys():
             angparamsdict2[angtyp2] = angparms[angtyp1[::-1]]
+
+    #Add for a specific situation
+    for i in coparas:
+      for atid in atidtrans:
+        if mol.atoms[atid].atname == 'O' and mol.atoms[atid].resid == i:
+          angtyp1 = (attypdict[atid][0], 'C ', 'N ')
+          angtyp2 = (attypdict[atid][1], 'C ', 'N ')
+          if (angtyp2 not in angparamsdict2.keys()) and (angtyp2[::-1] \
+              not in angparamsdict2.keys()):
+            if angtyp1 in angparms.keys():
+              angparamsdict2[angtyp2] = angparms[angtyp1]
+            elif angtyp1[::-1] in angparms.keys():
+              angparamsdict2[angtyp2] = angparms[angtyp1[::-1]]
 
     for i in angparamsdict1.keys():
       print >> fmf, 'NON', i[0] + '-' + i[1] + '-' + i[2] + angparamsdict1[i]
@@ -256,6 +281,24 @@ def gene_pre_frcmod_file(ionids, naamol2f, stpdbf, stfpf, prefcdf, ffchoice,
             elif (dihtyp1n not in dihparamsdict.keys()) and (dihtyp1n[::-1] \
                   not in dihparamsdict.keys()):
               dihparamsdict[dihtyp1n] = ['   3    0.00          0.0   ', \
+                                         '          3.   ', ' ']
+
+    #Add for a specfic situation
+    for i in coparas:
+      for atid in atidtrans:
+        if mol.atoms[atid].atname == 'O' and mol.atoms[atid].resid == i:
+          for ionid in ionids:
+            if ((atid, ionid, 1) in all_list.bondlist) or \
+               ((ionid, atid, 1) in all_list.bondlist):
+              dihtyp1 = (attypdict[ionid][0], attypdict[atid][0], 'C ', 'N ')
+              dihtyp2 = (attypdict[ionid][1], attypdict[atid][1], 'C ', 'N ')
+              if (dihtyp2 not in dihparamsdict) and (dihtyp2[::-1] not in dihparamsdict):
+                if dihtyp1 in dihparms.keys():
+                  dihparamsdict[dihtyp2] = dihparms[dihtyp1]
+                elif dihtyp1[::-1] in dihparms.keys():
+                  dihparamsdict[dihtyp2] = dihparms[dihtyp1[::-1]]
+                else:
+                  dihparamsdict[dihtyp2] = ['   3    0.00          0.0   ', \
                                          '          3.   ', ' ']
 
     print >> fmf, ' '

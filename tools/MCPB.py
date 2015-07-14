@@ -496,6 +496,9 @@ fipdbf = gname + '_mcpbpy.pdb'
 stfpf = gname + '_standard.fingerprint'
 lgfpf = gname + '_large.fingerprint'
 
+##residue information file
+scresf = gname + '_sidechain.res'
+
 ##frcmod files
 prefcdf = gname + '_pre.frcmod'
 finfcdf = gname + '.frcmod'
@@ -548,19 +551,16 @@ elif (options.step in ['1', '1a']): #Default
 #2e) Empirical method developed by Pengfei Li and co-workers in Merz group
 #2s) Default. Seminario method developed by Seminario in 1990s
 #2z) Z-matrix method
-elif (options.step == '2e'):
-    gene_pre_frcmod_file(ionids, premol2fs, stpdbf, stfpf, prefcdf, ff_choice,
-                         gaff, frcmodfs, watermodel)
-    gene_by_empirical_way(scpdbf, ionids, stfpf, prefcdf, finfcdf)
-elif (options.step in ['2', '2s']): #Default
-    gene_pre_frcmod_file(ionids, premol2fs, stpdbf, stfpf, prefcdf, ff_choice,
-                         gaff, frcmodfs, watermodel)
-    gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, prefcdf, finfcdf, fcfchkf,
-                         fclogf, g0x, scalef, bondfc_avg, anglefc_avg)
-elif (options.step == '2z'):
-    gene_pre_frcmod_file(ionids, premol2fs, stpdbf, stfpf, prefcdf, ff_choice,
-                         gaff, frcmodfs, watermodel)
-    gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, prefcdf, finfcdf, \
+elif (options.step in ['2', '2s', '2e', '2z']):
+    gene_pre_frcmod_file(ionids, premol2fs, stpdbf, stfpf, scresf, prefcdf,
+                         ff_choice, gaff, frcmodfs, watermodel)
+    if options.step == '2e':
+        gene_by_empirical_way(scpdbf, ionids, stfpf, prefcdf, finfcdf)
+    elif (options.step in ['2', '2s']): #Default
+        gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, prefcdf, finfcdf,
+                      fcfchkf, fclogf, g0x, scalef, bondfc_avg, anglefc_avg)
+    elif (options.step == '2z'):
+        gene_by_QM_fitting_zmatrix(scpdbf, ionids, stfpf, prefcdf, finfcdf,
                                fclogf, scalef)
 #==============================================================================
 # Step 3 Doing the RESP charge fitting and generate the mol2 files

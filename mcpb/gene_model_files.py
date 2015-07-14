@@ -1632,6 +1632,25 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
     scresids = list(set(scresids))
     scresids.sort()
 
+    scresf = outf + '_sidechain.res'
+
+    w_scresf = open(scresf, 'w')
+    for i in scresace:
+      print >> w_scresf, 'ACE-', i
+    for i in scresnme:
+      print >> w_scresf, 'NME-', i
+    for i in scresgly:
+      print >> w_scresf, 'GLY-', i
+    for i in scresknh:
+      print >> w_scresf, 'KNH-', i
+    for i in screskco:
+      print >> w_scresf, 'KCO-', i
+    for i in scresant:
+      print >> w_scresf, 'ANT-', i
+    for i in scresact:
+      print >> w_scresf, 'ACT-', i
+    w_scresf.close()
+
     print "***The sidechain model contains the following residues: "
     print scresids
 
