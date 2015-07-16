@@ -13,7 +13,7 @@ from pymsmtmol.gmsio import get_crds_from_gms, get_matrix_from_gms
 from optparse import OptionParser
 
 parser = OptionParser("usage: -i PDB_file -f Hess_file [--bavg] [--aavg] [--dih]"
-                      "[--imp] [--scalef scale_factor] [-v software]")
+                      " [--imp] [--scalef scale_factor] [-v software]")
 parser.set_defaults(softversion='g03', scalef=1.000)
 parser.add_option("-i", dest="inputfile", type='string',
                   help="Input PDB file name")
