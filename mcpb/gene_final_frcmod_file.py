@@ -676,7 +676,7 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
             print '### Bond force constant between ' + \
               mol.atoms[at1].resname + str(mol.atoms[at1].resid) + '@' + mol.atoms[at1].atname + ' and ' + \
               mol.atoms[at2].resname + str(mol.atoms[at2].resid) + '@' + mol.atoms[at2].atname + ' : ' + \
-              str(round(fcfinal, 1)) + '±' + str(round(stdv, 1))
+              str(round(fcfinal, 1)) + ' with StdDev ' + str(round(stdv, 1))
           elif bondavg == 0:
             dis, fcfinal = get_bond_fc_with_sem(crds, fcmatrix, nat1, nat2, scalef, bondavg)
 
@@ -711,7 +711,7 @@ def gene_by_QM_fitting_sem(scpdbf, ionids, stfpf, pref, finf, chkfname,
               mol.atoms[at1].resname + str(mol.atoms[at1].resid) +  '@' + mol.atoms[at1].atname + ', ' + \
               mol.atoms[at2].resname + str(mol.atoms[at2].resid) +  '@' + mol.atoms[at2].atname + ' and ' + \
               mol.atoms[at3].resname + str(mol.atoms[at3].resid) +  '@' + mol.atoms[at3].atname + ' : ' + \
-              str(round(fcfinal, 2)) + '±' + str(round(stdv, 2))
+              str(round(fcfinal, 2)) + ' with StdDev ' + str(round(stdv, 2))
           elif angavg == 0:
              angval, fcfinal = get_ang_fc_with_sem(crds, fcmatrix, nat1, nat2, nat3, scalef, angavg)
 
