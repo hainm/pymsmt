@@ -167,15 +167,15 @@ for line in inputf:
         else:
             raise pymsmtError('ion_ids need to be provided.')
     #addres
-    elif line[0].lower() == 'add_resids':
+    elif line[0].lower() == 'additional_resids':
         if len(line) >= 2:
             try:
                 addres = line[1:]
                 addres = [int(i) for i in addres]
             except:
-                raise pymsmtError('add_resids need to be integer number(s).')
+                raise pymsmtError('additional_resids need to be integer number(s).')
         else:
-            raise pymsmtError('add_resids need to be provided.')
+            raise pymsmtError('additional_resids need to be provided.')
     #ioninfo
     elif line[0].lower() == 'ion_info':
         if (len(line)-1)%4 == 0:
@@ -453,7 +453,7 @@ try:
 except:
     raise pymsmtError('ion_mol2files needs to be provided.')
 
-print 'The variable add_resids is : ', addres
+print 'The variable additional_resids is : ', addres
 print 'The variable group_name is : ', gname
 print 'The variable cut_off is : ', cutoff
 print 'The variable chgfix_resids is : ', chgfix_resids
