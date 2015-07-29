@@ -1436,7 +1436,7 @@ def build_large_model(mol, reslist, lmsresids, lmsresace, lmsresnme,
         print "Could not perform SQM optimization for the large model " + \
               "with spin number not equal to 1."
 
-def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
+def gene_model_files(pdbfile, ionids, addres, outf, ffchoice, naamol2f, cutoff, \
                      watermodel, autoattyp, largeopt, sqmopt, scchg, lgchg):
 
     mol, atids, resids = get_atominfo_fpdb(pdbfile)
@@ -1487,7 +1487,7 @@ def gene_model_files(pdbfile, ionids, outf, ffchoice, naamol2f, cutoff, \
       if mol.atoms[i].resid not in msresids:
         msresids.append(mol.atoms[i].resid)
 
-    msresids = msresids + metresids
+    msresids = msresids + metresids + addres
     msresids.sort()
 
     print "***The following residues are in the Metal Site:"

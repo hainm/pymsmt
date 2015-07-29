@@ -80,6 +80,7 @@ options.step = options.step.lower()
 
 # Default values
 cutoff = 2.8
+addres = []
 chgfix_resids = []
 naamol2fs = []
 ff_choice = 'ff14SB'
@@ -165,6 +166,16 @@ for line in inputf:
                 raise pymsmtError('ion_ids need to be integer number(s).')
         else:
             raise pymsmtError('ion_ids need to be provided.')
+    #addres
+    elif line[0].lower() == 'add_resids':
+        if len(line) >= 2:
+            try:
+                addres = line[1:]
+                addres = [int(i) for i in addres]
+            except:
+                raise pymsmtError('add_resids need to be integer number(s).')
+        else:
+            raise pymsmtError('add_resids need to be provided.')
     #ioninfo
     elif line[0].lower() == 'ion_info':
         if (len(line)-1)%4 == 0:
@@ -442,6 +453,7 @@ try:
 except:
     raise pymsmtError('ion_mol2files needs to be provided.')
 
+print 'The variable add_resids is : ', addres
 print 'The variable group_name is : ', gname
 print 'The variable cut_off is : ', cutoff
 print 'The variable chgfix_resids is : ', chgfix_resids
@@ -533,14 +545,14 @@ ileapf = gname + '_tleap.in'
 #1a) Default. Automatically rename the atom type of the atoms in the metal
 #    complex.
 if (options.step == '1n'):
-    gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
-                     watermodel, 0, largeopt, sqmopt, scchg, lgchg)
+    gene_model_files(orpdbf, ionids, addres, gname, ff_choice, premol2fs,
+                   cutoff, watermodel, 0, largeopt, sqmopt, scchg, lgchg)
 elif (options.step == '1m'):
-    gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
-                     watermodel, 1, largeopt, sqmopt, scchg, lgchg)
+    gene_model_files(orpdbf, ionids, addres, gname, ff_choice, premol2fs,
+                   cutoff, watermodel, 1, largeopt, sqmopt, scchg, lgchg)
 elif (options.step in ['1', '1a']): #Default
-    gene_model_files(orpdbf, ionids, gname, ff_choice, premol2fs, cutoff,
-                     watermodel, 2, largeopt, sqmopt, scchg, lgchg)
+    gene_model_files(orpdbf, ionids, addres, gname, ff_choice, premol2fs,
+                   cutoff, watermodel, 2, largeopt, sqmopt, scchg, lgchg)
 #==============================================================================
 # Step 2 Frcmod file generation
 #==============================================================================
